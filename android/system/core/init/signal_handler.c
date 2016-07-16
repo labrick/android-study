@@ -51,11 +51,12 @@ static int wait_for_one_process(int block)
     struct listnode *node;
     struct command *cmd;
 
+    // 回收子进程所占用的资源
     while ( (pid = waitpid(-1, &status, block ? 0 : WNOHANG)) == -1 && errno == EINTR );
     if (pid <= 0) return -1;
     INFO("waitpid returned pid %d, status = %08x\n", pid, status);
 
-    svc = service_find_by_pid(pid);
+    svc = service_find_by_pid(pid);     // 取出与服务列表中终止进程相关的服务项目
     if (!svc) {
         ERROR("untracked pid %d exited\n", pid);
         return 0;
@@ -63,24 +64,24 @@ static int wait_for_one_process(int block)
 
     NOTICE("process '%s', pid %d exited\n", svc->name, pid);
 
-    if (!(svc->flags & SVC_ONESHOT) || (svc->flags & SVC_RESTART)) {
+    if (!(svc->flags & SVC_ONESHOT) || (svc->flags & SVC_RESTART)) {    // oneshot模式
         kill(-pid, SIGKILL);
         NOTICE("process '%s' killing any children in process group\n", svc->name);
     }
 
     /* remove any sockets we may have created */
-    for (si = svc->sockets; si; si = si->next) {
+    for (si = svc->sockets; si; si = si->next) {        // 删除其所持有的所有socketDescriptor
         char tmp[128];
         snprintf(tmp, sizeof(tmp), ANDROID_SOCKET_DIR"/%s", si->name);
         unlink(tmp);
     }
 
     svc->pid = 0;
-    svc->flags &= (~SVC_RUNNING);
+    svc->flags &= (~SVC_RUNNING);   // 从驱动运行中删除
 
         /* oneshot processes go into the disabled state on exit,
          * except when manually restarted. */
-    if ((svc->flags & SVC_ONESHOT) && !(svc->flags & SVC_RESTART)) {
+    if ((svc->flags & SVC_ONESHOT) && !(svc->flags & SVC_RESTART)) {    // oneshot不在重新启动
         svc->flags |= SVC_DISABLED;
     }
 
@@ -107,10 +108,10 @@ static int wait_for_one_process(int block)
     }
 
     svc->flags &= (~SVC_RESTART);
-    svc->flags |= SVC_RESTARTING;
+    svc->flags |= SVC_RESTARTING;       // 开始重启
 
     /* Execute all onrestart commands for this service. */
-    list_for_each(node, &svc->onrestart.commands) {
+    list_for_each(node, &svc->onrestart.commands) {     // 检查带重启的进程在init.rc中是否带有onrestart选项
         cmd = node_to_item(node, struct command, clist);
         cmd->func(cmd->nargs, cmd->args);
     }
@@ -124,7 +125,7 @@ void handle_signal(void)
 
     /* we got a SIGCHLD - reap and restart as needed */
     read(signal_recv_fd, tmp, sizeof(tmp));
-    while (!wait_for_one_process(0))
+    while (!wait_for_one_process(0))        // 子进程终止事件处理函数
         ;
 }
 

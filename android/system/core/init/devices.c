@@ -828,9 +828,9 @@ void handle_device_fd()
         msg[n+1] = '\0';
 
         struct uevent uevent;
-        parse_event(msg, &uevent);
+        parse_event(msg, &uevent);  // 将uevent信息写入uevent结构体
 
-        handle_device_event(&uevent);
+        handle_device_event(&uevent);   // 先创建子目录，再创建节点文件
         handle_firmware_event(&uevent);
     }
 }
@@ -851,11 +851,12 @@ static void do_coldboot(DIR *d)
 
     dfd = dirfd(d);
 
+    // 根据路径查找保存的uevent文件
     fd = openat(dfd, "uevent", O_WRONLY);
     if(fd >= 0) {
-        write(fd, "add\n", 4);
+        write(fd, "add\n", 4);  // 并向相关文件写入"add"信息，而后强制引起uevent
         close(fd);
-        handle_device_fd();
+        handle_device_fd();     // 接收相关的uevent，获取uevent中的信息
     }
 
     while((de = readdir(d))) {
@@ -899,7 +900,7 @@ void device_init(void)
     }
 
     /* is 256K enough? udev uses 16MB! */
-    device_fd = uevent_open_socket(256*1024, true);
+    device_fd = uevent_open_socket(256*1024, true);     // 创建一个套接字接收uevent
     if(device_fd < 0)
         return;
 
@@ -908,7 +909,7 @@ void device_init(void)
 
     if (stat(coldboot_done, &info) < 0) {
         t0 = get_usecs();
-        coldboot("/sys/class");
+        coldboot("/sys/class");     // 对内核启动时注册到/sys下的驱动程序进行冷插拔处理
         coldboot("/sys/block");
         coldboot("/sys/devices");
         t1 = get_usecs();

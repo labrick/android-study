@@ -386,6 +386,7 @@ void handle_property_set_fd()
     }
 
     /* Check socket options here */
+    // 先从套接字获取SO_PEERCRED值，以便检查传递信息的进程的访问权限
     if (getsockopt(s, SOL_SOCKET, SO_PEERCRED, &cr, &cr_size) < 0) {
         close(s);
         ERROR("Unable to receive socket options\n");
@@ -413,10 +414,12 @@ void handle_property_set_fd()
 
         getpeercon(s, &source_ctx);
 
+        // 以ctl开头的消息并非请求更改属性值，而是请求进程启动与终止消息
         if(memcmp(msg.name,"ctl.",4) == 0) {
             // Keep the old close-socket-early behavior when handling
             // ctl.* properties.
             close(s);
+            // 检查访问权限，仅有system server/root以及相关进程才能使用ctl消息终止或启动进程
             if (check_control_perms(msg.value, cr.uid, cr.gid, source_ctx)) {
                 handle_control_message((char*) msg.name + 4, (char*) msg.value);
             } else {
@@ -424,8 +427,9 @@ void handle_property_set_fd()
                         msg.name + 4, msg.value, cr.uid, cr.gid, cr.pid);
             }
         } else {
+            // 检查访问权限
             if (check_perms(msg.name, cr.uid, cr.gid, source_ctx)) {
-                property_set((char*) msg.name, (char*) msg.value);
+                property_set((char*) msg.name, (char*) msg.value);  // 更改系统属性值
             } else {
                 ERROR("sys_prop: permission denied uid:%d  name:%s\n",
                       cr.uid, msg.name);
@@ -682,12 +686,13 @@ void start_property_service(void)
 {
     int fd;
 
-    load_properties_from_file(PROP_PATH_SYSTEM_BUILD);
+    load_properties_from_file(PROP_PATH_SYSTEM_BUILD);      // 获取之前的几个属性值
     load_properties_from_file(PROP_PATH_SYSTEM_DEFAULT);
     load_override_properties();
     /* Read persistent properties after all default values have been loaded. */
-    load_persistent_properties();
+    load_persistent_properties();                 // 读取/data/property目录路中的属性值
 
+    // 创建套接字，以便init进程在收到子进程终止的SIGCHLD信号时调用相应的handler
     fd = create_socket(PROP_SERVICE_NAME, SOCK_STREAM, 0666, 0, 0);
     if(fd < 0) return;
     fcntl(fd, F_SETFD, FD_CLOEXEC);

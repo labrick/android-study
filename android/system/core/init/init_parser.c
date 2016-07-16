@@ -366,14 +366,14 @@ static void parse_config(const char *fn, char *s)
     state.priv = &import_list;
 
     for (;;) {
-        switch (next_token(&state)) {
+        switch (next_token(&state)) {   // 以行为单位分割参数传递来的字符串
         case T_EOF:
             state.parse_line(&state, 0, 0);
             goto parser_done;
         case T_NEWLINE:
             state.line++;
             if (nargs) {
-                int kw = lookup_keyword(args[0]);
+                int kw = lookup_keyword(args[0]);       // 判断命令是什么
                 if (kw_is(kw, SECTION)) {
                     state.parse_line(&state, 0, 0);
                     parse_new_section(&state, kw, nargs, args);
@@ -407,10 +407,10 @@ parser_done:
 int init_parse_config_file(const char *fn)
 {
     char *data;
-    data = read_file(fn, 0);
+    data = read_file(fn, 0);    // 读取文件
     if (!data) return -1;
 
-    parse_config(fn, data);
+    parse_config(fn, data);     // 分析读入的字符串
     DUMP();
     return 0;
 }

@@ -534,12 +534,12 @@ void execute_one_command(void)
     int ret;
 
     if (!cur_action || !cur_command || is_last_command(cur_action, cur_command)) {
-        cur_action = action_remove_queue_head();
+        cur_action = action_remove_queue_head();        // 获取动过列表头
         cur_command = NULL;
         if (!cur_action)
             return;
         INFO("processing action %p (%s)\n", cur_action, cur_action->name);
-        cur_command = get_first_command(cur_action);
+        cur_command = get_first_command(cur_action);    // 获得动作的命令
     } else {
         cur_command = get_next_command(cur_action, cur_command);
     }
@@ -547,7 +547,7 @@ void execute_one_command(void)
     if (!cur_command)
         return;
 
-    ret = cur_command->func(cur_command->nargs, cur_command->args);
+    ret = cur_command->func(cur_command->nargs, cur_command->args);     // 执行命令
     INFO("command '%s' r=%d\n", cur_command->args[0], ret);
 }
 
@@ -658,7 +658,7 @@ static int console_init_action(int nargs, char **args)
         have_console = 1;
     close(fd);
 
-    // if( load_565rle_image(INIT_IMAGE_FILE) ) {
+    // if( load_565rle_image(INIT_IMAGE_FILE) ) {       // 加载启动log图像文件
     if( strcmp(bootmode, "charger") && load_argb8888_image(INIT_IMAGE_FILE) ) {
         fd = open("/dev/tty0", O_WRONLY);
         if (fd >= 0) {
@@ -838,7 +838,7 @@ static int property_service_init_action(int nargs, char **args)
      * after the ro.foo properties are set above so
      * that /data/local.prop cannot interfere with them.
      */
-    start_property_service();
+    start_property_service();       // 启动属性服务
     return 0;
 }
 
@@ -1015,7 +1015,7 @@ int main(int argc, char **argv)
     int property_set_fd_init = 0;
     int signal_fd_init = 0;
     int keychord_fd_init = 0;
-    bool is_charger = false;
+    bool is_charger = false;        // 判断是否是在充电
 
     char* args_swapon[2];
     args_swapon[0] = "swapon_all";;
@@ -1039,6 +1039,7 @@ int main(int argc, char **argv)
          * together in the initramdisk on / and then we'll
          * let the rc file figure out the rest.
          */
+    // 创建设备节点
     mkdir("/dev", 0755);
     mkdir("/proc", 0755);
     mkdir("/sys", 0755);
@@ -1059,13 +1060,13 @@ int main(int argc, char **argv)
          * Now that tmpfs is mounted on /dev, we can actually
          * talk to the outside world.
          */
-    open_devnull_stdio();
-    klog_init();
-    property_init();
+    open_devnull_stdio();       // stdio/stdout/stderr都指向__null__设备
+    klog_init();                // 从这里创建__kmsg__设备
+    property_init();            // 属性服务
 
     get_hardware_name(hardware, &revision);
 
-    process_kernel_cmdline();
+    process_kernel_cmdline();   // 属性初始设置
 
     union selinux_callback cb;
     cb.func_log = klog_write;
@@ -1084,7 +1085,7 @@ int main(int argc, char **argv)
     restorecon("/dev/__properties__");
     restorecon_recursive("/sys");
 
-    is_charger = !strcmp(bootmode, "charger");
+    is_charger = !strcmp(bootmode, "charger");      // 从bootloader中获取是否在充电的信息
     usb_charge_flag = is_charger;
 
     INFO("property init\n");
@@ -1147,13 +1148,13 @@ int main(int argc, char **argv)
     queue_builtin_action(bootchart_init_action, "bootchart_init");
 #endif
 
-    for(;;) {
+    for(;;) {       // 监视事件 事件处理循环
         int nr, i, timeout = -1;
 
         execute_one_command();
         restart_processes();
 
-        if (!property_set_fd_init && get_property_set_fd() > 0) {
+        if (!property_set_fd_init && get_property_set_fd() > 0) {       // 通过套接字传递信息
             ufds[fd_count].fd = get_property_set_fd();
             ufds[fd_count].events = POLLIN;
             ufds[fd_count].revents = 0;
@@ -1195,17 +1196,17 @@ int main(int argc, char **argv)
         }
 #endif
 
-        nr = poll(ufds, fd_count, timeout);
+        nr = poll(ufds, fd_count, timeout);     // 获取事件（热插拔检测）
         if (nr <= 0)
             continue;
 
-        for (i = 0; i < fd_count; i++) {
+        for (i = 0; i < fd_count; i++) {                        // 处理套接字传回的信息
             if (ufds[i].revents & POLLIN) {
-                if (ufds[i].fd == get_property_set_fd())
+                if (ufds[i].fd == get_property_set_fd())        // 处理属性变更
                     handle_property_set_fd();
                 else if (ufds[i].fd == get_keychord_fd())
                     handle_keychord();
-                else if (ufds[i].fd == get_signal_fd())
+                else if (ufds[i].fd == get_signal_fd())         // 处理子进程传回的信息
                     handle_signal();
             }
         }

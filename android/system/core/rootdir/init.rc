@@ -22,6 +22,7 @@ on early-init
 # create mountpoints
     mkdir /mnt 0775 root system
 
+# 设置环境变量/运行根文件系统命令的目录/程序编译时需要的库目录
 on init
 
 sysclktz 0
@@ -259,6 +260,7 @@ on post-fs-data
     # Set indication (checked by vold) that we have finished this action
     #setprop vold.post_fs_data_done 1
 
+# 设置应用程序终止条件，应用程序驱动目录及文件权限
 on boot
 # basic network init
     ifup lo
@@ -422,6 +424,7 @@ on property:selinux.reload_policy=1
     restart installd
 
 service console /system/bin/sh
+# 服务的附件内容：包含运行权限/条件/重启等相关选项
     class core
     console
     disabled

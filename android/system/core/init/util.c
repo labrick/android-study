@@ -382,8 +382,9 @@ void open_devnull_stdio(void)
     if (mknod(name, S_IFCHR | 0600, (1 << 8) | 3) == 0) {
         fd = open(name, O_RDWR);
         unlink(name);
+        // stdio/stdout/stderr¿¿¿__null__¿¿
         if (fd >= 0) {
-            dup2(fd, 0);
+            dup2(fd, 0);        // dup2¿dup¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿¿file¿¿¿
             dup2(fd, 1);
             dup2(fd, 2);
             if (fd > 2) {
