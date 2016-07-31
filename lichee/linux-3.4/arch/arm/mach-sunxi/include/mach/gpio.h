@@ -126,13 +126,14 @@ enum sunxi_pin_int_source_clk {
     SUNXI_PIN_INT_SRC_CLK_24M = 0x1
 };
 
+// 输入gpio口全局索引，输出他原来的名字
 static inline int sunxi_gpio_to_name(int gpio, char *name)
 {
 	int bank, index;
-	if (!name) {
+	if (!name) {        // !name是指针存在？
 		return -EINVAL;
 	}
-	if (IS_AXP_PIN(gpio)) {
+	if (IS_AXP_PIN(gpio)) {     // AXP引脚
 		/* axp gpio name like this : GPIO0/GPIO1/.. */
 		index = gpio - AXP_PIN_BASE;
 		sprintf(name, "GPIO%d", index);

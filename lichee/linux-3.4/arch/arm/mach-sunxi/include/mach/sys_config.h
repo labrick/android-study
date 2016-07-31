@@ -33,7 +33,7 @@
 
 /* gpio config info */
 struct gpio_config {
-	u32	gpio;		/* gpio global index, must be unique */
+	u32	gpio;		/* gpio global index, must be unique */// 全局索引，即
 	u32 	mul_sel;	/* multi sel val: 0 - input, 1 - output... */
 	u32 	pull;		/* pull val: 0 - pull up/down disable, 1 - pull up... */
 	u32 	drv_level;	/* driver level val: 0 - level 0, 1 - level 1... */
@@ -61,7 +61,7 @@ typedef enum {
  * @str: string pointer for sting type item
  * @gpio: gpio config for gpio type item
  */
-typedef union {
+typedef union {     // 联合的妙处：三个值只有一个有效
     int                 val;
     char                *str;
     struct gpio_config  gpio;

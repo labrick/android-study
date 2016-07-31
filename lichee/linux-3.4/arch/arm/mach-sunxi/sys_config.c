@@ -23,6 +23,7 @@
 #define SCRIPT_FREE(addr, size)    free_bootmem((unsigned long)addr, (unsigned long)size)
 
 
+// 类型本是数字所以，此处转换为字符串
 #define ITEM_TYPE_TO_STR(type)	((SCIRPT_ITEM_VALUE_TYPE_INT == (type)) ?  "int"    :	\
 				((SCIRPT_ITEM_VALUE_TYPE_STR == (type))  ?  "string" :	\
 				((SCIRPT_ITEM_VALUE_TYPE_PIO == (type))  ?   "gpio" : "invalid")))
@@ -33,12 +34,12 @@
  * @items: count of sub key
  * @offset: position of the value of main key, in dword
  */
-#pragma pack(1)
+#pragma pack(1) // 存储一个主键
 typedef struct
 {
-    char name[32];
-    int  sub_cnt;
-    int  offset;
+    char name[32];              // 主键名称
+    int  sub_cnt;               // 子键数
+    int  offset;                // ？？
 } script_origin_main_key_t;
 #pragma pack()
 
@@ -49,13 +50,13 @@ typedef struct
  * @type: type of sub key, int / string / gpio
  * @cnt:  length of the value area, in dword
  */
-#pragma pack(1)
+#pragma pack(1) // 存储一个子键
 typedef struct
 {
-    char name[32];
-    int  offset;
+    char name[32];              // 子键名称
+    int  offset;                // 子键值的位置？
     struct {
-        u32 cnt : 16;
+        u32 cnt : 16;           // 子键类型
         u32 type: 16;
     }pattern;
 } script_origin_sub_key_t;
@@ -67,12 +68,12 @@ typedef struct
  * @version: script version
  * @main_key: fist main key
  */
-#pragma pack(1)
+#pragma pack(1) // 存储所有键值对的头
 typedef struct
 {
-    int  main_cnt;
-    int  version[3];
-    script_origin_main_key_t    main_key;
+    int  main_cnt;          // 主键的个数
+    int  version[3];        // 脚本版本
+    script_origin_main_key_t    main_key;   // 不是指针？
 } script_origin_head_t;
 #pragma pack()
 
@@ -86,15 +87,15 @@ typedef struct
  * @drv_level: drive level
  * @data: gpio data value
  */
-#pragma pack(1)
+#pragma pack(1)     // 记录gpio的使用情况
 typedef struct {
-    char    gpio_name[32];
-    int     port;
-    int     port_num;
-    int     mul_sel;
-    int     pull;
-    int     drv_level;
-    int     data;
+    char    gpio_name[32];      // gpio名字
+    int     port;               // gpio端口号(PA/PB)
+    int     port_num;           // gpio组内序号
+    int     mul_sel;            // 功能复用选择
+    int     pull;               // 内部电阻状态
+    int     drv_level;          // 驱动能力
+    int     data;               // 输出电平
 } script_origin_gpio_t;
 #pragma pack()
 
@@ -183,12 +184,12 @@ typedef struct {
  * @hash: hash value of sub key name, for searching quickly
  * @next: pointer for list
  */
-typedef struct {
+typedef struct {        // 管理所有子键的开头
     char                        name[SCRIPT_NAME_SIZE_MAX];
     script_item_u               *value;
     script_item_value_type_e    type;
-    int                         hash;
-    void                        *next;
+    int                         hash;       // 就是把该结构所有字节加在一起的值
+    void                        *next;      // 指向下一个子键
 } script_sub_key_t;
 
 /*
@@ -201,7 +202,7 @@ typedef struct {
  * @hash: hash value of sub key name, for searching quickly
  * @next: pointer for list
  */
-typedef struct {
+typedef struct {        // 管理所有主键的头，这些结构很可能直接写到了二进制中
     char                name[SCRIPT_NAME_SIZE_MAX];
     script_sub_key_t    *subkey;
     script_item_u       *subkey_val;
@@ -227,7 +228,7 @@ typedef enum {
 	SCIRPT_PARSER_VALUE_TYPE_GPIO_WORD
 } script_parser_value_type_t;
 
-static script_main_key_t   *g_script;
+static script_main_key_t   *g_script;       // 全局主键指针
 
 static int hash(char *string)
 {
@@ -238,7 +239,7 @@ static int hash(char *string)
     }
 
     while(*string){
-        hash += *string;
+        hash += *string;        // 这里将所有字符相加，得到hash数据，做校验？
 	string++;
     }
 
@@ -252,7 +253,14 @@ static int hash(char *string)
  *
  * return the gpio index for the port, GPIO_INDEX_INVALID indicate err
  */
-u32 port_to_index(u32 port, u32 port_num)
+/**
+ * port_to_index - 输入端口号，返回其在全局区域的索引，port is from script？？
+ * @port: gpio口组索引，例如: 1代表PA，2代表PB...，-1(0xFFF)代表axp引脚
+ * @port_num: 端口在gpio组中的索引，例如：0代表PA0，1代表PA1...
+ *
+ * 返回该端口在整个gpio口中的索引，返回GPIO_INDEX_INVALID代表错误。
+ */
+u32 port_to_index(u32 port, u32 port_num)       // 给我一个端口，给你一个地址
 {
 	/* sunxi system config pin name space and 
 	 * pinctrl name space map table like this:
@@ -276,37 +284,38 @@ u32 port_to_index(u32 port, u32 port_num)
 	return index;
 }
 
+// 打印该主键中所有子键的信息
 void dump_mainkey(script_main_key_t *pmainkey)
 {
 	script_sub_key_t *psubkey = NULL;
 	char gpio_name[8] = {0};
 
 	if(NULL == pmainkey || NULL == pmainkey->subkey || NULL == pmainkey->subkey_val)
-		return;
+		return;     // 如果主键头/主键中的子键头头为空，或者子键中没有值，直接退出
 
 	printk("++++++++++++++++++++++++++%s++++++++++++++++++++++++++\n", __func__);
 	printk("    name:      %s\n", pmainkey->name);
 	printk("    sub_key:   name           type      value\n");
-	psubkey = pmainkey->subkey;
-	while(psubkey) {
-		switch(psubkey->type) {
-		case SCIRPT_ITEM_VALUE_TYPE_INT:
+	psubkey = pmainkey->subkey;     // 不直接操作子键指针，以免误改动
+	while(psubkey) {                // 打印出所有子键情况
+		switch(psubkey->type) {     // 判断子键的类型
+		case SCIRPT_ITEM_VALUE_TYPE_INT:        // int
 			printk("               %-15s%-10s%d\n", psubkey->name,
 				ITEM_TYPE_TO_STR(psubkey->type), psubkey->value->val);
 			break;
-		case SCIRPT_ITEM_VALUE_TYPE_STR:
+		case SCIRPT_ITEM_VALUE_TYPE_STR:        // string
 			printk("               %-15s%-10s\"%s\"\n", psubkey->name,
 				ITEM_TYPE_TO_STR(psubkey->type), psubkey->value->str);
 			break;
-		case SCIRPT_ITEM_VALUE_TYPE_PIO:			
-			sunxi_gpio_to_name(psubkey->value->gpio.gpio, gpio_name);
+		case SCIRPT_ITEM_VALUE_TYPE_PIO:        // GPIO
+			sunxi_gpio_to_name(psubkey->value->gpio.gpio, gpio_name);   // 把gpio全局索引转化名字
 			printk("               %-15s%-10s(gpio: %#x / %s, mul: %d, pull %d, drv %d, data %d)\n", 
 				psubkey->name, ITEM_TYPE_TO_STR(psubkey->type), 
 				psubkey->value->gpio.gpio, gpio_name,
 				psubkey->value->gpio.mul_sel,
 				psubkey->value->gpio.pull, psubkey->value->gpio.drv_level, psubkey->value->gpio.data);
 			break;
-		default:
+		default:                                // invalid
 			printk("               %-15sinvalid type!\n", psubkey->name);
 			break;
 		}
@@ -315,6 +324,8 @@ void dump_mainkey(script_main_key_t *pmainkey)
 	printk("--------------------------%s--------------------------\n", __func__);
 }
 
+// 如果main_key为空，则dump所有主键，否则dump出该主键即可
+// 指针为null和!指针=true有什么区别？？？？
 int script_dump_mainkey(char *main_key)
 {
 	int     main_hash = 0;
@@ -325,7 +336,7 @@ int script_dump_mainkey(char *main_key)
 		main_hash = hash(main_key);
 		while(pmainkey) {
 			if((pmainkey->hash == main_hash) && !strcmp(pmainkey->name, main_key)) {
-				dump_mainkey(pmainkey);
+				dump_mainkey(pmainkey);     // 如果hash值相同，并且逐渐名相同，dump出来
 				return 0;
 			}
 			pmainkey = pmainkey->next;
