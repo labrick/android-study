@@ -27,7 +27,5 @@ cp -r /home/lab302/robot/R16-Parrot_SDK/lichee/linux-3.4/arch/arm/mach-sunxi/ ./
 cd ../../../../
 echo "update android ok"
 echo
-pwd
-echo
 echo "---------------------check code changed-----------------"
 git status
