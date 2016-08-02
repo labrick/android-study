@@ -483,6 +483,8 @@ service surfaceflinger /system/bin/surfaceflinger
     group graphics drmrpc
     onrestart restart zygote
 
+# "-"传给虚拟机的参数; "--"传给
+# -Xzygote:用来区分要在虚拟机中运行的类是Zygote还是在Zygote中运行的其他Android应用程序
 service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
     class main
     socket zygote stream 660 root system
