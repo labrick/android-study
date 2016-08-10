@@ -39,7 +39,7 @@ typedef struct
 {
     char name[32];              // 主键名称
     int  sub_cnt;               // 子键数
-    int  offset;                // 子键列表位置
+    int  offset;                // 主键值位置
 } script_origin_main_key_t;
 #pragma pack()
 
@@ -50,14 +50,14 @@ typedef struct
  * @type: type of sub key, int / string / gpio
  * @cnt:  length of the value area, in dword
  */
-#pragma pack(1) // 存储一个子键
-typedef struct
+#pragma pack(1) //按照1字节方式进行对齐 
+typedef struct  // 在脚本缓存中定义子键数据
 {
     char name[32];              // 子键名称
     int  offset;                // 子键值的位置？
     struct {
-        u32 cnt : 16;           // 子键类型
-        u32 type: 16;
+        u32 cnt : 16;           // 值的区间长度
+        u32 type: 16;           // 子键类型
     }pattern;
 } script_origin_sub_key_t;
 #pragma pack()
@@ -73,7 +73,7 @@ typedef struct
 {
     int  main_cnt;          // 主键的个数
     int  version[3];        // 脚本版本
-    script_origin_main_key_t    main_key;   // 不是指针？
+    script_origin_main_key_t    main_key;   // 首个主键，不是指针？
 } script_origin_head_t;
 #pragma pack()
 
@@ -90,12 +90,12 @@ typedef struct
 #pragma pack(1)     // 记录gpio的使用情况
 typedef struct {
     char    gpio_name[32];      // gpio名字
-    int     port;               // gpio端口号(PA/PB)
-    int     port_num;           // gpio组内序号
+    int     port;               // gpio端口号(PA，PB，.....)
+    int     port_num;           // gpio端口pin号
     int     mul_sel;            // 功能复用选择
-    int     pull;               // 内部电阻状态
+    int     pull;               // 内部电平状态（pin状态？）
     int     drv_level;          // 驱动能力
-    int     data;               // 输出电平
+    int     data;               // 输出电平（gpio数据值？）
 } script_origin_gpio_t;
 #pragma pack()
 
@@ -185,11 +185,11 @@ typedef struct {
  * @next: pointer for list
  */
 typedef struct {        // 管理所有子键的开头
-    char                        name[SCRIPT_NAME_SIZE_MAX];
-    script_item_u               *value;
-    script_item_value_type_e    type;
-    int                         hash;       // 就是把该结构所有字节加在一起的值
-    void                        *next;      // 指向下一个子键
+    char                        name[SCRIPT_NAME_SIZE_MAX];    // item名
+    script_item_u               *value;      // item值
+    script_item_value_type_e    type;        // item类型
+    int                         hash;       // 就是把该结构所有字节加在一起的值（子键名的hash值，方便快速搜索？）
+    void                        *next;      // 指向下一个子键（链表指针？）
 } script_sub_key_t;
 
 /*
@@ -203,13 +203,13 @@ typedef struct {        // 管理所有子键的开头
  * @next: pointer for list
  */
 typedef struct {        // 管理所有主键的头，这些结构很可能直接写到了二进制中
-    char                name[SCRIPT_NAME_SIZE_MAX];
-    script_sub_key_t    *subkey;
-    script_item_u       *subkey_val;
-    script_item_u       *gpio;
-    int                 gpio_cnt;
-    int                 hash;
-    void                *next;
+    char                name[SCRIPT_NAME_SIZE_MAX];    // 主键名
+    script_sub_key_t    *subkey;          // 子键列表
+    script_item_u       *subkey_val;      // 存储子键的缓冲
+    script_item_u       *gpio;            // gpio列表指针
+    int                 gpio_cnt;         // gpio计数器？（conter）
+    int                 hash;            // 子键名的hash值
+    void                *next;           // 链表指针
 } script_main_key_t;
 
 /*
@@ -220,12 +220,12 @@ typedef struct {        // 管理所有主键的头，这些结构很可能直�
  * @SCIRPT_PARSER_VALUE_TYPE_MULTI_WORD: multi int type, not used currently
  * @SCIRPT_PARSER_VALUE_TYPE_GPIO_WORD: gpio item type
  */
-typedef enum {
-	SCIRPT_PARSER_VALUE_TYPE_INVALID = 0,
-	SCIRPT_PARSER_VALUE_TYPE_SINGLE_WORD,
-	SCIRPT_PARSER_VALUE_TYPE_STRING,
-	SCIRPT_PARSER_VALUE_TYPE_MULTI_WORD,
-	SCIRPT_PARSER_VALUE_TYPE_GPIO_WORD
+typedef enum {                             // 定义脚本子键类型,来源于.bin文件
+	SCIRPT_PARSER_VALUE_TYPE_INVALID = 0,  // 无效类型
+	SCIRPT_PARSER_VALUE_TYPE_SINGLE_WORD,  // 整型
+	SCIRPT_PARSER_VALUE_TYPE_STRING,       // 字符串型
+	SCIRPT_PARSER_VALUE_TYPE_MULTI_WORD,   // 多整型
+	SCIRPT_PARSER_VALUE_TYPE_GPIO_WORD     // gpio型
 } script_parser_value_type_t;
 
 static script_main_key_t   *g_script;       // 全局主键指针
@@ -240,7 +240,7 @@ static int hash(char *string)
     }
 
     while(*string){
-        hash += *string;        // 这里将所有字符相加，得到hash数据，做校验？
+        hash += *string;        // 这里将所有字符相加，得到hash数据
 	string++;
     }
 
@@ -276,12 +276,12 @@ u32 port_to_index(u32 port, u32 port_num)       // 给我一个端口，给你�
 	u32 index;
 	
 	if (port == AXP_CFG_GRP) {
-		/* valid axp gpio */
+		/* valid axp gpio */   // AXP_CFG_GRP = 0xFFFF
 		index = AXP_PIN_BASE + port_num;
 	} else {
 		/* sunxi pinctrl pin */
 		index = (port - 1) * 32 + port_num;
-	}
+	}    // 如果axp gpio口有效，则索引= 1024+port_num;否则，索引= （port-1）*32+port_num
 	return index;
 }
 
@@ -469,11 +469,11 @@ char *script_get_main_key_name(unsigned int main_key_index)
         if (mainkey_count == main_key_index) {
         	/* find target mainkey */
         	return mainkey->name;
-        }
+        }  // 如果主键个数等于主键索引号，则返回主键名指针 
         mainkey_count++;
         mainkey = mainkey->next;
     }
-    /* invalid mainkey index for seach */
+    /* invalid mainkey index for search */
 	return NULL;
 }
 EXPORT_SYMBOL(script_get_main_key_name);
@@ -529,7 +529,7 @@ int __init script_init(void)
         return -1;
     }
 
-    /* alloc memory for main keys */
+    /* alloc memory for main keys */ // 为主键分配内存
     g_script = SCRIPT_MALLOC(script_hdr->main_cnt*sizeof(script_main_key_t));
     if(!g_script) {
         printk(KERN_ERR "try to alloc memory for main keys!\n");
@@ -537,7 +537,7 @@ int __init script_init(void)
     }
 
     origin_main = &script_hdr->main_key;
-    for(i=0; i<script_hdr->main_cnt; i++) {
+    for(i=0; i<script_hdr->main_cnt; i++) {  // 复制主键名并计算hash值
         main_key = &g_script[i];
 
         /* copy main key name */
@@ -545,7 +545,7 @@ int __init script_init(void)
         /* calculate hash value */
         main_key->hash = hash(main_key->name);
 
-	if (origin_main[i].sub_cnt == 0) {
+	if (origin_main[i].sub_cnt == 0) { // 如果子键个数为0，则跳过子键初始化
 		/* this mainkey have no subkey, skip subkey initialize */
 		main_key->subkey = NULL;
 		main_key->subkey_val = NULL;
@@ -553,7 +553,7 @@ int __init script_init(void)
 		goto next_mainkey;
 	}
 	
-        /* allock memory for sub-keys */
+        /* allock memory for sub-keys */ // 为子键分配内存
         main_key->subkey = SCRIPT_MALLOC(origin_main[i].sub_cnt*sizeof(script_sub_key_t));
         main_key->subkey_val = SCRIPT_MALLOC(origin_main[i].sub_cnt*sizeof(script_item_u));
         if(!main_key->subkey || !main_key->subkey_val) {
@@ -565,16 +565,16 @@ int __init script_init(void)
         sub_val = main_key->subkey_val;
         origin_sub = (script_origin_sub_key_t *)((unsigned int)script_hdr + (origin_main[i].offset<<2));
 
-        /* process sub keys */
+        /* process sub keys */ //处理子键的名称，hash值，类型及值
         for(j=0; j<origin_main[i].sub_cnt; j++) {
             strncpy(sub_key[j].name, origin_sub[j].name, SCRIPT_NAME_SIZE_MAX);
             sub_key[j].hash = hash(sub_key[j].name);
             sub_key[j].type = (script_item_value_type_e)origin_sub[j].pattern.type;
             sub_key[j].value = &sub_val[j];
-            if(origin_sub[j].pattern.type == SCIRPT_PARSER_VALUE_TYPE_SINGLE_WORD) {
+            if(origin_sub[j].pattern.type == SCIRPT_PARSER_VALUE_TYPE_SINGLE_WORD) { // int
                 sub_val[j].val = *(int *)((unsigned int)script_hdr + (origin_sub[j].offset<<2));
                 sub_key[j].type = SCIRPT_ITEM_VALUE_TYPE_INT;
-            } else if(origin_sub[j].pattern.type == SCIRPT_PARSER_VALUE_TYPE_STRING) {
+            } else if(origin_sub[j].pattern.type == SCIRPT_PARSER_VALUE_TYPE_STRING) { //string
                 sub_val[j].str = SCRIPT_MALLOC((origin_sub[j].pattern.cnt<<2) + 1);
                 memcpy(sub_val[j].str, (char *)((unsigned int)script_hdr + (origin_sub[j].offset<<2)), origin_sub[j].pattern.cnt<<2);
                 sub_key[j].type = SCIRPT_ITEM_VALUE_TYPE_STR;
@@ -582,7 +582,7 @@ int __init script_init(void)
                 script_origin_gpio_t    *origin_gpio = (script_origin_gpio_t *)((unsigned int)script_hdr + (origin_sub[j].offset<<2) - 32);
 		u32 gpio_tmp = port_to_index(origin_gpio->port, origin_gpio->port_num);
 
-		if(GPIO_INDEX_INVALID == gpio_tmp)
+		if(GPIO_INDEX_INVALID == gpio_tmp) // 如果GPIO_INDEX_INVALID == gpio_tmp,子键为gpio型，否则无效
 			printk(KERN_ERR "%s:%s->%s gpio cfg invalid, please check sys_config.fex!\n",__func__,main_key->name,sub_key[j].name);
                 sub_val[j].gpio.gpio = gpio_tmp;
                 sub_val[j].gpio.mul_sel = (u32)origin_gpio->mul_sel;
@@ -600,7 +600,7 @@ int __init script_init(void)
         tmp_val = main_key->subkey_val;
         count = 0;
         for(j=0; j<origin_main[i].sub_cnt; j++) {
-            if(sub_key[j].type == SCIRPT_ITEM_VALUE_TYPE_PIO) {
+            if(sub_key[j].type == SCIRPT_ITEM_VALUE_TYPE_PIO) {  // 如果子键为gpio型，则交换子键，子键值指针和子键值
                 /* swap sub key */
                 swap_sub = *tmp_sub;
                 *tmp_sub = sub_key[j];
@@ -623,7 +623,7 @@ int __init script_init(void)
         for(j=0; j<origin_main[i].sub_cnt-1; j++) {
             main_key->subkey[j].next = &main_key->subkey[j+1];
         }
-        /* set gpio infermation */
+        /* set gpio information */
 next_mainkey:
         main_key->gpio = main_key->subkey_val;
         main_key->gpio_cnt = count;
@@ -638,7 +638,7 @@ next_mainkey:
 
 err_out:
 
-    /* script init failed, release resource */
+    /* script init failed, release resource */ // 脚本初始化失败，释放资源
     printk(KERN_ERR "init sys_config script failed!\n");
     if(g_script) {
         for(i=0; i<script_hdr->main_cnt; i++) {
@@ -668,7 +668,7 @@ err_out:
     return -1;
 }
 
-/* string for dump all items */
+/* string for dump all items */   //转存所有items
 #define DUMP_ALL_STR	"all"
 
 typedef struct {
@@ -698,15 +698,15 @@ int __sysfs_dump_mainkey(script_main_key_t *pmainkey, char *buf)
 	psubkey = pmainkey->subkey;
 	while(psubkey) {
 		switch(psubkey->type) {
-		case SCIRPT_ITEM_VALUE_TYPE_INT:
+		case SCIRPT_ITEM_VALUE_TYPE_INT:       //int
 			cnt += sprintf(buf + cnt, "               %-15s%-10s%d\n", psubkey->name,
 				ITEM_TYPE_TO_STR(psubkey->type), psubkey->value->val);
 			break;
-		case SCIRPT_ITEM_VALUE_TYPE_STR:
+		case SCIRPT_ITEM_VALUE_TYPE_STR:       // string
 			cnt += sprintf(buf + cnt, "               %-15s%-10s\"%s\"\n", psubkey->name,
 				ITEM_TYPE_TO_STR(psubkey->type), psubkey->value->str);
 			break;
-		case SCIRPT_ITEM_VALUE_TYPE_PIO:
+		case SCIRPT_ITEM_VALUE_TYPE_PIO:      // gpio
 			sunxi_gpio_to_name(psubkey->value->gpio.gpio, gpio_name);			
 			cnt += sprintf(buf + cnt, "               %-15s%-10s(gpio: %#x / %s, mul: %d, pull %d, drv %d, data %d)\n", 
 				psubkey->name, ITEM_TYPE_TO_STR(psubkey->type), 
@@ -714,7 +714,7 @@ int __sysfs_dump_mainkey(script_main_key_t *pmainkey, char *buf)
 				psubkey->value->gpio.mul_sel,
 				psubkey->value->gpio.pull, psubkey->value->gpio.drv_level, psubkey->value->gpio.data);
 			break;
-		default:
+		default:        //无效
 			cnt += sprintf(buf + cnt, "               %-15sinvalid type!\n", psubkey->name);
 			break;
 		}
@@ -732,7 +732,7 @@ int __sysfs_dump_mainkey(script_main_key_t *pmainkey, char *buf)
  *
  * return size written to the buf, otherwise failed
  */
-static ssize_t dump_show(struct class *class, struct class_attribute *attr, char *buf)
+static ssize_t dump_show(struct class *class, struct class_attribute *attr, char *buf) //展现dump属性的函数,返回写到缓存的大小
 {
 	script_main_key_t *pmainkey = g_script;
 	int main_hash = 0;
@@ -743,7 +743,7 @@ static ssize_t dump_show(struct class *class, struct class_attribute *attr, char
 		return -EINVAL;
 	}
 #endif
-	if(!memcmp(dump_struct.mainkey, DUMP_ALL_STR, strlen(DUMP_ALL_STR))
+	if(!memcmp(dump_struct.mainkey, DUMP_ALL_STR, strlen(DUMP_ALL_STR))  
 		|| 0 == dump_struct.mainkey[0]) { /* dump all mainkey */
 		pr_info("%s: dump all main keys\n", __func__);
 		while(pmainkey) {
@@ -774,18 +774,18 @@ static ssize_t dump_show(struct class *class, struct class_attribute *attr, char
  * return size if success, otherwise failed
  */
 static ssize_t dump_store(struct class *class, struct class_attribute *attr,
-			const char *buf, size_t size)
+			const char *buf, size_t size)  // 存储dump属性的函数，返回缓存（包含主键名的输入缓存）大小
 {
-	if(strlen(buf) >= sizeof(dump_struct.mainkey)) {
+	if(strlen(buf) >= sizeof(dump_struct.mainkey)) { // 如果输入缓存的字节数不小于dump_struct.mainkey的字节数，则缓存太长，failed
 		pr_err("%s(%d) err: name \"%s\" too long\n", __func__, __LINE__, buf);
 		return -EINVAL;
 	}
-	if(0 == buf[0]) {
+	if(0 == buf[0]) { //buf[0]为0则主键无效，failed
 		pr_err("%s(%d) err: invalid mainkey\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 	strcpy(dump_struct.mainkey, buf);
-	if('\n' == dump_struct.mainkey[strlen(dump_struct.mainkey) - 1]) /* remove tail \n */
+	if('\n' == dump_struct.mainkey[strlen(dump_struct.mainkey) - 1]) /* remove tail \n */ // 如果dump_struct.mainkey的末位字符为0，则返回缓存大小
 		dump_struct.mainkey[strlen(dump_struct.mainkey) - 1] = 0;
 	pr_info("%s: get input mainkey \"%s\"\n", __func__, dump_struct.mainkey);
 	return size;
@@ -866,4 +866,4 @@ static int __init script_sysfs_init(void)
     return status;
 }
 postcore_initcall(script_sysfs_init);
-
+ 
