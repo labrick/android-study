@@ -39,7 +39,7 @@ typedef struct
 {
     char name[32];              // 主键名称
     int  sub_cnt;               // 子键数
-    int  offset;                // ？？
+    int  offset;                // 子键列表位置
 } script_origin_main_key_t;
 #pragma pack()
 
@@ -104,9 +104,9 @@ typedef struct {
  * origin script defined as follows:
  *
  * |-----------------------|
- * |@main-cnt |@version[3] |
+ * |@main-cnt |@version[3] |            // script主要信息,script_origin_head_t
  * |-----------------------|
- * | origin main key 0:    |
+ * | origin main key 0:    |            // script主键信息,script_origin_main_key_t
  * | @name[32]             |
  * | @sub_cnt              |
  * | @offset   ------------|-----
@@ -122,7 +122,7 @@ typedef struct {
  *                              |
  *                              |
  * |-----------------------|    |
- * | origin sub key 0:     |<---|
+ * | origin sub key 0:     |<---|       // script子键信息,script_origin_sub_key_t
  * | @name                 |
  * | @offset   ------------|----|
  * | @type                 |    |
@@ -230,6 +230,7 @@ typedef enum {
 
 static script_main_key_t   *g_script;       // 全局主键指针
 
+// 这里hash的应该是一个结构体，不包括指针链的内容
 static int hash(char *string)
 {
     int     hash = 0;
@@ -336,7 +337,7 @@ int script_dump_mainkey(char *main_key)
 		main_hash = hash(main_key);
 		while(pmainkey) {
 			if((pmainkey->hash == main_hash) && !strcmp(pmainkey->name, main_key)) {
-				dump_mainkey(pmainkey);     // 如果hash值相同，并且逐渐名相同，dump出来
+				dump_mainkey(pmainkey);     // 如果hash值相同，并且主键名相同，dump出来
 				return 0;
 			}
 			pmainkey = pmainkey->next;
@@ -355,6 +356,7 @@ int script_dump_mainkey(char *main_key)
 }
 EXPORT_SYMBOL(script_dump_mainkey);
 
+// 获得主键中子键的值(放在item指向空间)和数据类型(返回值)
 script_item_value_type_e
 script_get_item(char *main_key, char *sub_key, script_item_u *item)
 {
@@ -392,6 +394,7 @@ script_get_item(char *main_key, char *sub_key, script_item_u *item)
 }
 EXPORT_SYMBOL(script_get_item);
 
+// 获得主键中gpio的链表指针(**list中)和gpio口数(返回值)
 int script_get_pio_list(char *main_key, script_item_u **list)
 {
     int     main_hash;
@@ -424,6 +427,7 @@ EXPORT_SYMBOL(script_get_pio_list);
  *
  * @return     the count of main_key
  */
+// 获得主键的个数
 unsigned int script_get_main_key_count(void)
 {
 	unsigned int      mainkey_count = 0;
@@ -450,6 +454,7 @@ EXPORT_SYMBOL(script_get_main_key_count);
  * @main_key_name    the buffer to store target main_key_name
  * @return     the pointer of target mainkey name
  */
+// 获得第main_key_index个主键的名字
 char *script_get_main_key_name(unsigned int main_key_index)
 {
 	unsigned int      mainkey_count = 0;
@@ -473,6 +478,7 @@ char *script_get_main_key_name(unsigned int main_key_index)
 }
 EXPORT_SYMBOL(script_get_main_key_name);
 
+// 判断该主键是否存在
 bool script_is_main_key_exist(char *main_key)
 {
     int     main_hash;
@@ -502,6 +508,7 @@ EXPORT_SYMBOL(script_is_main_key_exist);
 /*
  * init script
  */
+// script:就是把整合好的那个bin文件叫script，这样还可以理解过去 
 int __init script_init(void)
 {
     int     i, j, count;
