@@ -532,7 +532,7 @@ int __init script_init(void)
 
     /* alloc memory for main keys */ // 为主键分配内存
     g_script = SCRIPT_MALLOC(script_hdr->main_cnt*sizeof(script_main_key_t));   //为g_script指针分配的内存大小为（主键数*script_main_key_t所占字节数）
-    if(!g_script) {
+    if(!g_script) {     
         printk(KERN_ERR "try to alloc memory for main keys!\n");
         return -1;
     }
@@ -625,7 +625,7 @@ int __init script_init(void)
         }
 
         /* process sub key link */
-        for(j=0; j<origin_main[i].sub_cnt-1; j++) {
+        for(j=0; j<origin_main[i].sub_cnt-1; j++) { //处理main_key中的子键链与gpio信息
             main_key->subkey[j].next = &main_key->subkey[j+1];
         }
         /* set gpio information */
@@ -673,7 +673,7 @@ err_out:
     return -1;
 }
 
-/* string for dump all items */   //转存所有items
+/* string for dump all items */   
 #define DUMP_ALL_STR	"all"
 
 typedef struct {
@@ -696,13 +696,14 @@ int __sysfs_dump_mainkey(script_main_key_t *pmainkey, char *buf)
 
 	if(NULL == pmainkey || NULL == pmainkey->subkey || NULL == pmainkey->subkey_val)
 		return 0;
-
+    //  
 	cnt += sprintf(buf + cnt, "++++++++++++++++++++++++++%s++++++++++++++++++++++++++\n", __func__);
 	cnt += sprintf(buf + cnt, "    name:      %s\n", pmainkey->name);
 	cnt += sprintf(buf + cnt, "    sub_key:   name           type      value\n");
 	psubkey = pmainkey->subkey;
 	while(psubkey) {
 		switch(psubkey->type) {
+        // 根据item类型，将该类型的子键名称、子键类型、子键值等信息格式化写入buf+cnt缓冲区，其中cnt为上述信息对应的字符数的和。如int型，cnt为子键名、子键类型及子键值对应的字符数相加
 		case SCIRPT_ITEM_VALUE_TYPE_INT:       //int
 			cnt += sprintf(buf + cnt, "               %-15s%-10s%d\n", psubkey->name,
 				ITEM_TYPE_TO_STR(psubkey->type), psubkey->value->val);
@@ -742,13 +743,14 @@ static ssize_t dump_show(struct class *class, struct class_attribute *attr, char
 	script_main_key_t *pmainkey = g_script;
 	int main_hash = 0;
 	int cnt = 0;
-#if 1
+#if 1   //执行以下程序段
 	if(0 == dump_struct.mainkey[0]) {
 		pr_err("%s(%d) err: please input mainkey firstly\n", __func__, __LINE__);
 		return -EINVAL;
-	}
+	}   //dump的第一个主键不能为空
 #endif
-	if(!memcmp(dump_struct.mainkey, DUMP_ALL_STR, strlen(DUMP_ALL_STR))  
+	if(!memcmp(dump_struct.mainkey, DUMP_ALL_STR, strlen(DUMP_ALL_STR)) 
+        //如果dump结构中的主键与DUMP_ALL_STR两者所对应的字节不相同或dump结构中的第一个主键为空，则dump出所有主键；否则只dump该主键  
 		|| 0 == dump_struct.mainkey[0]) { /* dump all mainkey */
 		pr_info("%s: dump all main keys\n", __func__);
 		while(pmainkey) {
@@ -781,16 +783,16 @@ static ssize_t dump_show(struct class *class, struct class_attribute *attr, char
 static ssize_t dump_store(struct class *class, struct class_attribute *attr,
 			const char *buf, size_t size)  // 存储dump属性的函数，返回缓存（包含主键名的输入缓存）大小
 {
-	if(strlen(buf) >= sizeof(dump_struct.mainkey)) { // 如果输入缓存的字节数不小于dump_struct.mainkey的字节数，则缓存太长，failed
+	if(strlen(buf) >= sizeof(dump_struct.mainkey)) { // 如果包含主键名的输入缓存的字节数不小于dump_struct.mainkey的字节数，则缓存太长，返回-EINVAL
 		pr_err("%s(%d) err: name \"%s\" too long\n", __func__, __LINE__, buf);
 		return -EINVAL;
 	}
-	if(0 == buf[0]) { //buf[0]为0则主键无效，failed
+	if(0 == buf[0]) { //buf[0]为0则主键无效，返回-EINVAL
 		pr_err("%s(%d) err: invalid mainkey\n", __func__, __LINE__);
 		return -EINVAL;
 	}
-	strcpy(dump_struct.mainkey, buf);
-	if('\n' == dump_struct.mainkey[strlen(dump_struct.mainkey) - 1]) /* remove tail \n */ // 如果dump_struct.mainkey的末位字符为0，则返回缓存大小
+	strcpy(dump_struct.mainkey, buf);   //将buf中的内容复制到dump_struct.mainkey中
+	if('\n' == dump_struct.mainkey[strlen(dump_struct.mainkey) - 1]) /* remove tail \n */ // 如果dump_struct.mainkey的末尾内容为0，则获得输入主键，返回缓存大小
 		dump_struct.mainkey[strlen(dump_struct.mainkey) - 1] = 0;
 	pr_info("%s: get input mainkey \"%s\"\n", __func__, dump_struct.mainkey);
 	return size;
@@ -810,15 +812,15 @@ ssize_t get_item_show(struct class *class, struct class_attribute *attr, char *b
 	} else {
 		pr_info("%s(%d): script_get_item return type [%s] for %s->%s\n", __func__, __LINE__,
 			ITEM_TYPE_TO_STR(type), get_item_struct.mainkey, get_item_struct.subkey);
-		memcpy(buf, &item, sizeof(item));
+		memcpy(buf, &item, sizeof(item));   //如果dump结构中主键的子键类型有效，则打印出主键和子键，并将item所在内存地址的内容复制到buf中
 		/* the extra 4bytes store item type, for sizeof(script_item_value_type_e) = 4 */
-		*(u32 *)(buf + sizeof(item)) = (u32)type;
+		*(u32 *)(buf + sizeof(item)) = (u32)type;   //额外的4字节缓冲空间用来存储item类型
 		outsize = sizeof(item) + sizeof(u32);
 		/* copy string to user space */
 		if(SCIRPT_ITEM_VALUE_TYPE_STR == type) {
-			strcpy(buf + outsize, item.str);
+			strcpy(buf + outsize, item.str);    //dump结构中主键的子键为string型，则将字符串复制到用户空间
 			outsize += strlen(item.str);
-		} else if(SCIRPT_ITEM_VALUE_TYPE_PIO == type) {
+		} else if(SCIRPT_ITEM_VALUE_TYPE_PIO == type) { //dump结构中主键的子键为gpio型，则将gpio转化成名字并复制到用户空间
 			/* convert gpio to name(eg: "PH5") and copy to user space */
 			//WARN_ON(0 != sw_gpio_to_name(item.gpio.gpio, buf + outsize));
 			outsize += strlen(buf + outsize);
@@ -833,7 +835,8 @@ ssize_t get_item_store(struct class *class, struct class_attribute *attr,
 	char *last_char;
 
 	pr_info("%s: input buf %s\n", __func__, buf);
-	sscanf(buf, "%s %s", get_item_struct.mainkey, get_item_struct.subkey);
+	sscanf(buf, "%s %s", get_item_struct.mainkey, get_item_struct.subkey); 
+    //从buf里读入数据按string格式写入get_item_struct.mainkey和 get_item_struct.subkey
 	if(0 != strlen(get_item_struct.subkey)) {
 		last_char = get_item_struct.subkey + strlen(get_item_struct.subkey) - 1;
 		if('\n' == *last_char)
