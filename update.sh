@@ -18,16 +18,16 @@ echo "update android ok"
 
 echo "start update linux ..."
 sleep 1
-cd lichee/linux-3.4/arch/arm
+cd lichee/linux-3.4/arch/
 if [ ! -d ".tmp" ]; then
     mkdir .tmp
 fi
-if [ -d ".tmp/mach-sunxi" ]; then
-    rm -rf .tmp/mach-sunxi
+if [ -d ".tmp/arm" ]; then
+    rm -rf .tmp/arm
 fi
-mv -f mach-sunxi .tmp/mach-sunxi
-cp -r $LINUXDIR/lichee/linux-3.4/arch/arm/mach-sunxi/ ./
-cd ../../../../
+mv -f arm .tmp/arm
+cp -r $LINUXDIR/lichee/linux-3.4/arch/arm/ ./
+cd ../../../
 echo "update android ok"
 echo
 echo "---------------------check code changed-----------------"
