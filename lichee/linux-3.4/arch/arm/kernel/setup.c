@@ -68,14 +68,14 @@
 
 #ifndef MEM_SIZE
 #define MEM_SIZE	(16*1024*1024)
-#endif
+#endif      //如果没有定义MEM_SIZE，则定义
 
 #if defined(CONFIG_FPE_NWFPE) || defined(CONFIG_FPE_FASTFPE)
 char fpe_type[8];
 
-static int __init fpe_setup(char *line)
+static int __init fpe_setup(char *line)     //初始化fpe函数
 {
-	memcpy(fpe_type, line, 8);
+	memcpy(fpe_type, line, 8);   //将line所在内存地址中的内容复制到数组fpe_type中
 	return 1;
 }
 
@@ -151,7 +151,7 @@ struct machine_desc *machine_desc __initdata;
 
 static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
 static union { char c[4]; unsigned long l; } endian_test __initdata = { { 'l', '?', '?', 'b' } };
-#define ENDIANNESS ((char)endian_test.l)
+#define ENDIANNESS ((char)endian_test.l)    //将endian_test.l强制转化成字符型，定义为ENDIANNESS
 
 DEFINE_PER_CPU(struct cpuinfo_arm, cpu_data);
 
@@ -159,6 +159,7 @@ DEFINE_PER_CPU(struct cpuinfo_arm, cpu_data);
  * Standard memory resources
  */
 static struct resource mem_res[] = {
+    //resource结构包含一个结构数组mem_res,用来初始化内存资源,包括video ram, kernel code, kernel data
 	{
 		.name = "Video RAM",
 		.start = 0,
@@ -184,6 +185,7 @@ static struct resource mem_res[] = {
 #define kernel_data mem_res[2]
 
 static struct resource io_res[] = {
+    // resource结构下包含一数组io_res，用来初始化IO资源
 	{
 		.name = "reserved",
 		.start = 0x3bc,
@@ -208,7 +210,7 @@ static struct resource io_res[] = {
 #define lp1 io_res[1]
 #define lp2 io_res[2]
 
-static const char *proc_arch[] = {
+static const char *proc_arch[] = {  //初始化处理器架构
 	"undefined/unknown",
 	"3",
 	"4",
@@ -229,6 +231,7 @@ static const char *proc_arch[] = {
 };
 
 static int __get_cpu_architecture(void)
+    //通过读取CPUID的32位ID号来判断CPU架构类型
 {
 	int cpu_arch;
 
@@ -246,7 +249,7 @@ static int __get_cpu_architecture(void)
 		/* Revised CPUID format. Read the Memory Model Feature
 		 * Register 0 and check for VMSAv7 or PMSAv7 */
 		asm("mrc	p15, 0, %0, c0, c1, 4"
-		    : "=r" (mmfr0));
+		    : "=r" (mmfr0));    //在C中嵌入汇编，将协处理器CP15中的32位CPU ID码传送到RO，传入参数mmfr0
 		if ((mmfr0 & 0x0000000f) >= 0x00000003 ||
 		    (mmfr0 & 0x000000f0) >= 0x00000030)
 			cpu_arch = CPU_ARCH_ARMv7;
@@ -274,13 +277,14 @@ static int cpu_has_aliasing_icache(unsigned int arch)
 	unsigned int id_reg, num_sets, line_size;
 
 	/* PIPT caches never alias. */
-	if (icache_is_pipt())
+	if (icache_is_pipt())  
+        //如果为pipt（物理索引，物理标记）cache，则退出，因为pipt cache不会混淆（aliasing，多虚拟地址映射到一个物理地址上）
 		return 0;
 
 	/* arch specifies the register format */
 	switch (arch) {
 	case CPU_ARCH_ARMv7:
-		asm("mcr	p15, 2, %0, c0, c0, 0 @ set CSSELR"
+		asm("mcr	p15, 2, %0, c0, c0, 0 @ set CSSELR" //
 		    : /* No output operands */
 		    : "r" (1));
 		isb();
@@ -301,12 +305,13 @@ static int cpu_has_aliasing_icache(unsigned int arch)
 	return aliasing_icache;
 }
 
-static void __init cacheid_init(void)
+static void __init cacheid_init(void)   // 初始化cacheid
 {
 	unsigned int cachetype = read_cpuid_cachetype();
 	unsigned int arch = cpu_architecture();
 
 	if (arch >= CPU_ARCH_ARMv6) {
+        //根据cachetype判定CPU架构及cacheid
 		if ((cachetype & (7 << 29)) == 4 << 29) {
 			/* ARMv7 register format */
 			arch = CPU_ARCH_ARMv7;
@@ -333,6 +338,7 @@ static void __init cacheid_init(void)
 	}
 
 	printk("CPU: %s data cache, %s instruction cache\n",
+            //打印CPU的data cache和instruction cache信息
 		cache_is_vivt() ? "VIVT" :
 		cache_is_vipt_aliasing() ? "VIPT aliasing" :
 		cache_is_vipt_nonaliasing() ? "PIPT / VIPT nonaliasing" : "unknown",
@@ -354,7 +360,7 @@ extern struct proc_info_list *lookup_processor_type(unsigned int);
 #include <mach/platform.h>
 
 bool first_print = true;
-int __init  uart_init(void)
+int __init  uart_init(void)     //uart初始化
 {
 #define SUART_BAUDRATE	115200
 	u32 p2clk;
@@ -422,15 +428,15 @@ static void __init feat_v6_fixup(void)
  *
  * cpu_init sets up the per-CPU stacks.
  */
-void cpu_init(void)
+void cpu_init(void) //cpu初始化
 {
-	unsigned int cpu = smp_processor_id();
-	struct stack *stk = &stacks[cpu];
+	unsigned int cpu = smp_processor_id();  //返回当前CPU的号码，即第几颗CPU
+	struct stack *stk = &stacks[cpu];   
 
 	if (cpu >= NR_CPUS) {
 		printk(KERN_CRIT "CPU%u: bad primary CPU number\n", cpu);
 		BUG();
-	}
+	}   //如果不是第0颗CPU，
 
 	cpu_proc_init();
 
@@ -448,7 +454,7 @@ void cpu_init(void)
 	 * setup stacks for re-entrant exception handlers
 	 */
 	__asm__ (
-	"msr	cpsr_c, %1\n\t"
+	"msr	cpsr_c, %1\n\t" //将修改后的值写回cpsr寄存器的对应控制域
 	"add	r14, %0, %2\n\t"
 	"mov	sp, r14\n\t"
 	"msr	cpsr_c, %3\n\t"
