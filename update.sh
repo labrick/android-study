@@ -6,7 +6,7 @@ ANDROIDDIR=/home/lab302/robot/R16-Parrot_SDK
 #-------------------------------------------------
 ANDROIDFILE=core
 ANDROIDSUBDIR=android/system
-mkdir -p .tmp/$ANDROIDSUBDIR
+mkdir -p .tmp/$ANDROIDSUBDIR $ANDROIDSUBDIR
 
 echo "start update $ANDROIDDIR/$ANDROIDSUBDIR/$ANDROIDFILE ..." 
 sleep 1
@@ -18,9 +18,24 @@ cp -r $ANDROIDDIR/$ANDROIDSUBDIR/$ANDROIDFILE $ANDROIDSUBDIR
 echo "update $ANDROIDDIR/$ANDROIDSUBDIR/$ANDROIDFILE ok"
 
 #-------------------------------------------------
+ANDROIDFILE=core
+ANDROIDSUBDIR=android/frameworks/base
+mkdir -p .tmp/$ANDROIDSUBDIR $ANDROIDSUBDIR
+
+echo "start update $ANDROIDDIR/$ANDROIDSUBDIR/$ANDROIDFILE ..." 
+sleep 1
+if [ -d ".tmp/$ANDROIDSUBDIR/$ANDROIDFILE" ]; then
+    rm -rf .tmp/$ANDROIDSUBDIR/$ANDROIDFILE
+fi
+mv -f $ANDROIDSUBDIR/$ANDROIDFILE .tmp/$ANDROIDSUBDIR
+cp -r $ANDROIDDIR/$ANDROIDSUBDIR/$ANDROIDFILE $ANDROIDSUBDIR
+echo "update $ANDROIDDIR/$ANDROIDSUBDIR/$ANDROIDFILE ok"
+
+
+#-------------------------------------------------
 LINUXFILE=arm
 LINUXSUBDIR=lichee/linux-3.4/arch
-mkdir -p .tmp/$LINUXSUBDIR
+mkdir -p .tmp/$LINUXSUBDIR $LINUXSUBDIR
 
 echo "start update $LINUXDIR/$LINUXSUBDIR/$LINUXFILE ..."
 sleep 1
@@ -34,7 +49,7 @@ echo "update $LINUXDIR/$LINUXSUBDIR/$LINUXFILE ok"
 #-------------------------------------------------
 PCTOOLFILE=pack
 PCTOOLSUBDIR=lichee/tools
-mkdir -p .tmp/$PCTOOLSUBDIR
+mkdir -p .tmp/$PCTOOLSUBDIR $PCTOOLSUBDIR
 
 echo "start update $LINUXDIR/$PCTOOLSUBDIR/$PCTOOLFILE ..."
 sleep 1
