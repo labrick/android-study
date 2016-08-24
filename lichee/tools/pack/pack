@@ -30,6 +30,7 @@
 #    - Call pack with 'debug' parameters
 
 
+# 如果不在pack目录下，提示并退出
 if [ $(basename `pwd`) != "pack" ] ; then
 	echo "Please run at the top directory of pack"
 	exit 1
@@ -66,6 +67,8 @@ DEFINE_string 'function' 'android' 'pack private firmware' 'f'
 FLAGS "$@" || exit $?
 eval set -- "${FLAGS_ARGV}"
 
+# 脚本执行时通过参数列表传递这些参数
+# 比如：./pack -c sun8iw5p1，这里指定了PACK_CHIP=sun8iw5p1
 PACK_CHIP=${FLAGS_chip}
 PACK_PLATFORM=${FLAGS_platform}
 PACK_BOARD=${FLAGS_board}
@@ -78,15 +81,17 @@ ROOT_DIR=`pwd`
 TOOLS_DIR="${ROOT_DIR}/pctools/linux"
 LICHEE_OUT="../../out/${PACK_CHIP}/${PACK_PLATFORM}/common"
 OTA_TEST_NAME="ota_test"
-if [ -d ${LICHEE_OUT} ] ; then
-	LICHEE_OUT=`cd ${LICHEE_OUT}; pwd`
-else
-	pack_error "build lichee before you pack"
-	exit 1
-fi
+#if [ -d ${LICHEE_OUT} ] ; then
+#	LICHEE_OUT=`cd ${LICHEE_OUT}; pwd`
+#else
+#	pack_error "build lichee before you pack"
+#	exit 1
+#fi
 
+# 增加工具路径
 export PATH=${TOOLS_DIR}/mod_update:${TOOLS_DIR}/openssl:${TOOLS_DIR}/eDragonEx:${TOOLS_DIR}/fsbuild200:${TOOLS_DIR}/android:$PATH
 
+# 工具位置
 tools_file_list=(
 common/tools/split_xxxx.fex
 chips/${PACK_CHIP}/tools/split_xxxx.fex
@@ -104,6 +109,7 @@ common/tools/aultools.fex
 chips/${PACK_CHIP}/tools/aultools.fex
 )
 
+# 配置文件位置
 configs_file_list=(
 common/toc/toc1.fex
 common/toc/toc0.fex
@@ -141,6 +147,7 @@ chips/${PACK_CHIP}/bin/sboot_${PACK_CHIP}.bin:out/sboot.bin
 chips/${PACK_CHIP}/bin/sboot_${PACK_CHIP}-${OTA_TEST_NAME}.bin:out/sboot-${OTA_TEST_NAME}.bin
 )
 
+# 根据目录存在情况，判断支持的芯片类型及开发板型号
 function show_boards()
 {
 	printf "\nAll avaiable chips, platforms and boards:\n\n"
@@ -161,6 +168,7 @@ function show_boards()
 function uart_switch()
 {
 	cp $TOOLS_DIR/awk_debug_card0 out/awk_debug_card0
+    # 取出各功能引脚的配置信息
 	TX=`awk  '$0~"'$PACK_CHIP'"{print $2}' pctools/linux/card_debug_pin`
 	RX=`awk  '$0~"'$PACK_CHIP'"{print $3}' pctools/linux/card_debug_pin`
 	PORT=`awk  '$0~"'$PACK_CHIP'"{print $4}' pctools/linux/card_debug_pin`
@@ -169,6 +177,7 @@ function uart_switch()
 	DO=`awk  '$0~"'$PACK_CHIP'"{print $7}' pctools/linux/card_debug_pin`
 	DI=`awk  '$0~"'$PACK_CHIP'"{print $8}' pctools/linux/card_debug_pin`
 
+    # 根据配置信息改写out/awk_debug_card0
 	sed -i s'/jtag_ms = /jtag_ms = '$MS'/g' out/awk_debug_card0
 	sed -i s'/jtag_ck = /jtag_ck = '$CK'/g' out/awk_debug_card0
 	sed -i s'/jtag_do = /jtag_do = '$DO'/g' out/awk_debug_card0
@@ -178,6 +187,7 @@ function uart_switch()
 	sed -i s'/uart_debug_rx =/uart_debug_rx = '$RX'/g' out/awk_debug_card0
 	sed -i s'/uart_tx =/uart_tx = '$TX'/g' out/awk_debug_card0
 	sed -i s'/uart_rx =/uart_rx = '$RX'/g' out/awk_debug_card0
+    # 将sys_config.fex重命名为a.fex，并且和awk_debug_card0中对应的要改写为awk_debug_card0中的内容
 	awk -f out/awk_debug_card0 out/sys_config.fex > out/a.fex
 	rm out/sys_config.fex
 	mv out/a.fex out/sys_config.fex
@@ -212,12 +222,14 @@ function copy_ota_test_file()
 
 function do_prepare()
 {
+    # 这三个参数要存在
 	if [ -z "${PACK_CHIP}" -o -z "${PACK_PLATFORM}" -o -z "${PACK_BOARD}" ] ; then
 		pack_error "invalid chip, platform or board."
 		show_boards
 		exit 1
 	fi
 
+    # 对应芯片的开发板型号的存放配置文件的目录要存在
 	if [ ! -d chips/${PACK_CHIP}/configs/${PACK_BOARD} ] ; then
 		pack_error "board dir or path do not exist."
 		show_boards
@@ -225,25 +237,29 @@ function do_prepare()
 	fi
 
 	# Cleanup
+    # 重新创建输出目录
 	rm -rf out/
 	mkdir -p out/
 
 	printf "copying tools file\n"
 	for file in ${tools_file_list[@]} ; do
-		cp -f $file out/ 2> /dev/null
+        cp -f $file out/ #2> /dev/null   # 不打印错误信息(可能有些文件不存在)
 	done
 
 	printf "copying configs file\n"
 	for file in ${configs_file_list[@]} ; do
-		cp -f $file out/ 2> /dev/null
+		cp -f $file out/ #2> /dev/null
 	done
 	# If platform config files exist, we will cover the default files
 	# For example, mv out/image_linux.cfg out/image.cfg
+    # 如果平台配置文件存在，则覆盖默认的配置文件
 	find ./out/* -type f -a \( -name "*.fex" -o -name "*.cfg" \) -print | \
 		sed "s#\(.*\)_${PACK_PLATFORM}\(\..*\)#mv -fv & \1\2#e"
-
+##############################################################
+    # 这里是指dump模式，还不太明白
 	if [ "x${PACK_MODE}" = "xdump" ] ; then
 		mv out/sys_partition_dump.fex sys_partition.fex
+    # 什么功能？
 	elif [ "x${PACK_FUNC}" = "xprvt" ] ; then
 		mv out/sys_partition_private.fex sys_partition.fex
 	fi
@@ -251,15 +267,16 @@ function do_prepare()
 	printf "copying boot resource\n"
 	for file in ${boot_resource_list[@]} ; do
 		cp -rf `echo $file | awk -F: '{print $1}'` \
-			`echo $file | awk -F: '{print $2}'` 2>/dev/null
+			`echo $file | awk -F: '{print $2}'` #2>/dev/null
 	done
 
 	printf "copying boot file\n"
 	for file in ${boot_file_list[@]} ; do
 		cp -f `echo $file | awk -F: '{print $1}'` \
-			`echo $file | awk -F: '{print $2}'` 2>/dev/null
+			`echo $file | awk -F: '{print $2}'` #2>/dev/null
 	done
 
+    # 什么模式，应该不用管
 	if [ "x${PACK_SIG}" = "xsecure" ] ; then
 		printf "copying secure boot file\n"
 		for file in ${boot_file_secure[@]} ; do
@@ -272,12 +289,13 @@ function do_prepare()
 		printf "copy ota test file\n"
 		copy_ota_test_file
 	fi
-
+##############################################################
 	# Here, we can switch uart to card or normal
-	if [ "x${PACK_DEBUG}" = "xcard0" -a "x${PACK_MODE}" != "xdump" \
-		-a "x${PACK_FUNC}" != "xprvt" ] ; then \
-		uart_switch
-	fi
+	#if [ "x${PACK_DEBUG}" = "xcard0" -a "x${PACK_MODE}" != "xdump" \
+	#	-a "x${PACK_FUNC}" != "xprvt" ] ; then \
+	#	uart_switch
+	#fi
+    uart_switch
 
 	sed -i 's/\\boot-resource/\/boot-resource/g' out/boot-resource.ini
 	sed -i 's/\\\\/\//g' out/image.cfg

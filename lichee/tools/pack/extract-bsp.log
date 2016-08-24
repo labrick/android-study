@@ -1,0 +1,4 @@
+lab302@302e:~/robot/R16-Parrot_SDK/android$ extract-bsp 
+/home/lab302/robot/R16-Parrot_SDK/android/device/*/astar-evb20/bImage copied!
+/home/lab302/robot/R16-Parrot_SDK/android/device/*/astar-evb20/modules copied!
+lab302@302e:~/robot/R16-Parrot_SDK/android$

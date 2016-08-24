@@ -1,0 +1,83 @@
+lab302@302e:~/robot/R16-Parrot_SDK/android$ pack
+copying tools file
+copying configs file
+./out/aultls32.fex
+./out/aultools.fex
+./out/cardscript.fex
+./out/cardtool.fex
+./out/diskfs.fex
+./out/env_burn.cfg
+./out/env.cfg
+./out/image.cfg
+./out/image_linux.cfg
+./out/split_xxxx.fex
+./out/sys_config-bak.fex
+./out/sys_config.fex
+./out/sys_partition_dragonboard.fex
+./out/sys_partition_dump.fex
+./out/sys_partition.fex
+./out/sys_partition_linux.fex
+./out/sys_partition_private.fex
+./out/sys_partition_tina.fex
+./out/test_config.fex
+./out/usbtool.fex
+./out/usbtool_test.fex
+copying boot resource
+copying boot file
+packing for android
+normal
+/home/lab302/robot/R16-Parrot_SDK/lichee/tools/pack/pctools/linux/eDragonEx/
+/home/lab302/robot/R16-Parrot_SDK/lichee/tools/pack/out
+Begin Parse sys_partion.fex
+Add partion boot-resource.fex BOOT-RESOURCE_FEX
+Add partion very boot-resource.fex BOOT-RESOURCE_FEX
+FilePath: boot-resource.fex
+FileLength=453400Add partion env.fex ENV_FEX000000000
+Add partion very env.fex ENV_FEX000000000
+FilePath: env.fex
+FileLength=20000Add partion boot.fex BOOT_FEX00000000
+Add partion very boot.fex BOOT_FEX00000000
+FilePath: boot.fex
+FileLength=b30000Add partion system.fex SYSTEM_FEX000000
+Add partion very system.fex SYSTEM_FEX000000
+FilePath: system.fex
+FileLength=226cdb58Add partion recovery.fex RECOVERY_FEX0000
+Add partion very recovery.fex RECOVERY_FEX0000
+FilePath: recovery.fex
+FileLength=dd4000Add partion diskfs.fex DISKFS_FEX000000
+sys_config.fex Len: 0xf577
+config.fex Len: 0x9b38
+split_xxxx.fex Len: 0x200
+sys_partition.fex Len: 0xe2e
+boot0_nand.fex Len: 0x8000
+boot0_sdcard.fex Len: 0x8000
+u-boot.fex Len: 0xc4000
+fes1.fex Len: 0x1fc0
+full_img.fex Len: 0x16
+usbtool.fex Len: 0x23000
+aultools.fex Len: 0x26ead
+aultls32.fex Len: 0x238dd
+cardtool.fex Len: 0x14000
+cardscript.fex Len: 0x6ea
+sunxi_mbr.fex Len: 0x10000
+dlinfo.fex Len: 0x4000
+arisc.fex Len: 0x2ed88
+boot-resource.fex Len: 0x453400
+Vboot-resource.fex Len: 0x4
+env.fex Len: 0x20000
+Venv.fex Len: 0x4
+boot.fex Len: 0xb30000
+Vboot.fex Len: 0x4
+system.fex Len: 0x226cdb58
+Vsystem.fex Len: 0x4
+recovery.fex Len: 0xdd4000
+Vrecovery.fex Len: 0x4
+diskfs.fex Len: 0x200
+BuildImg 0
+Dragon execute image.cfg SUCCESS !
+----------image is at----------
+
+/home/lab302/robot/R16-Parrot_SDK/lichee/tools/pack/sun8iw5p1_android_evb-20_uart0.img
+
+pack finish
+lab302@302e:~/robot/R16-Parrot_SDK/android$
