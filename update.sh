@@ -6,6 +6,7 @@ ANDROIDDIR=/home/lab302/robot/R16-Parrot_SDK
 #-------------------------------------------------
 ANDROIDFILE=core
 ANDROIDSUBDIR=android/system
+rm -rf .tmp/$ANDROIDSUBDIR
 mkdir -p .tmp/$ANDROIDSUBDIR $ANDROIDSUBDIR
 
 echo "start update $ANDROIDDIR/$ANDROIDSUBDIR/$ANDROIDFILE ..." 
@@ -20,6 +21,7 @@ echo "update $ANDROIDDIR/$ANDROIDSUBDIR/$ANDROIDFILE ok"
 #-------------------------------------------------
 ANDROIDFILE=core
 ANDROIDSUBDIR=android/frameworks/base
+rm -rf .tmp/$ANDROIDSUBDIR
 mkdir -p .tmp/$ANDROIDSUBDIR $ANDROIDSUBDIR
 
 echo "start update $ANDROIDDIR/$ANDROIDSUBDIR/$ANDROIDFILE ..." 
@@ -35,6 +37,7 @@ echo "update $ANDROIDDIR/$ANDROIDSUBDIR/$ANDROIDFILE ok"
 #-------------------------------------------------
 LINUXFILE=arm
 LINUXSUBDIR=lichee/linux-3.4/arch
+rm -rf .tmp/$LINUXSUBDIR
 mkdir -p .tmp/$LINUXSUBDIR $LINUXSUBDIR
 
 echo "start update $LINUXDIR/$LINUXSUBDIR/$LINUXFILE ..."
@@ -49,6 +52,7 @@ echo "update $LINUXDIR/$LINUXSUBDIR/$LINUXFILE ok"
 #-------------------------------------------------
 PCTOOLFILE=pack
 PCTOOLSUBDIR=lichee/tools
+rm -rf .tmp/$PCTOOLSUBDIR
 mkdir -p .tmp/$PCTOOLSUBDIR $PCTOOLSUBDIR
 
 echo "start update $LINUXDIR/$PCTOOLSUBDIR/$PCTOOLFILE ..."
