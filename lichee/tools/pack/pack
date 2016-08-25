@@ -81,12 +81,12 @@ ROOT_DIR=`pwd`
 TOOLS_DIR="${ROOT_DIR}/pctools/linux"
 LICHEE_OUT="../../out/${PACK_CHIP}/${PACK_PLATFORM}/common"
 OTA_TEST_NAME="ota_test"
-#if [ -d ${LICHEE_OUT} ] ; then
-#	LICHEE_OUT=`cd ${LICHEE_OUT}; pwd`
-#else
-#	pack_error "build lichee before you pack"
-#	exit 1
-#fi
+if [ -d ${LICHEE_OUT} ] ; then
+	LICHEE_OUT=`cd ${LICHEE_OUT}; pwd`
+else
+	pack_error "build lichee before you pack"
+	#exit 1
+fi
 
 # 增加工具路径
 export PATH=${TOOLS_DIR}/mod_update:${TOOLS_DIR}/openssl:${TOOLS_DIR}/eDragonEx:${TOOLS_DIR}/fsbuild200:${TOOLS_DIR}/android:$PATH
@@ -295,12 +295,13 @@ function do_prepare()
 	#	-a "x${PACK_FUNC}" != "xprvt" ] ; then \
 	#	uart_switch
 	#fi
-    uart_switch
 
+    # 就是处理下boot-resource.ini/image.cfg，具体干了啥还真不知道
 	sed -i 's/\\boot-resource/\/boot-resource/g' out/boot-resource.ini
 	sed -i 's/\\\\/\//g' out/image.cfg
 	sed -i 's/^imagename/;imagename/g' out/image.cfg
 
+    # 要输出镜像的名字
 	IMG_NAME="${PACK_CHIP}_${PACK_PLATFORM}_${PACK_BOARD}_${PACK_DEBUG}"
 
     if [ "x${PACK_SIG}" != "xnone" ]; then
@@ -329,12 +330,16 @@ function do_common()
 {
 	cd out/
 
+    # 转换为DOS格式
 	busybox unix2dos sys_config.fex
 	busybox unix2dos sys_partition.fex
-	script  sys_config.fex > /dev/null
-	script  sys_partition.fex > /dev/null
+    # 这个script是指哪个？应该是指pctools/linux/mod_update/script
+    # script工具分析稍后再看，功能应该就是把fex文件按照一定方式转换为bin文件
+	script  sys_config.fex #> /dev/null
+	script  sys_partition.fex #> /dev/null
 	cp -f   sys_config.bin config.fex
 
+    ##### 这一部分先不管
 	if [ "x${PACK_PLATFORM}" = "xdragonboard" ] ; then
 		busybox dos2unix test_config.fex
 		cp test_config.fex boot-resource/
@@ -356,18 +361,21 @@ function do_common()
 		update_boot0 boot0_spinor.fex   sys_config.bin SDMMC_CARD > /dev/null
 		update_uboot u-boot-spinor.fex  sys_config.bin >/dev/null
 	fi
+    ##### 这一部分先不管
 
+    # 这里sunxi.dtb不存在，所以不分析设备树文件，3.4还没有设备树呢
 	if [ -f "${LICHEE_OUT}/sunxi.dtb" ]; then
 		ln -s ${LICHEE_OUT}/sunxi.dtb sunxi.fex
 		update_uboot_fdt u-boot.fex sunxi.fex u-boot.fex >/dev/null
 	fi
 
 	# Those files for Nand or Card
-	update_boot0 boot0_nand.fex	sys_config.bin NAND > /dev/null
-	update_boot0 boot0_sdcard.fex	sys_config.bin SDMMC_CARD > /dev/null
-	update_uboot u-boot.fex         sys_config.bin > /dev/null
-	update_fes1  fes1.fex           sys_config.bin > /dev/null
-	fsbuild	     boot-resource.ini  split_xxxx.fex > /dev/null
+    # 更改了和NAND/Card相关的配置
+	update_boot0 boot0_nand.fex	sys_config.bin NAND #> /dev/null
+	update_boot0 boot0_sdcard.fex	sys_config.bin SDMMC_CARD #> /dev/null
+	update_uboot u-boot.fex         sys_config.bin #> /dev/null
+	update_fes1  fes1.fex           sys_config.bin #> /dev/null
+	fsbuild	     boot-resource.ini  split_xxxx.fex #> /dev/null
 
 	if [ "x${PACK_FUNC}" = "xprvt" ] ; then
 		u_boot_env_gen env_burn.cfg env.fex > /dev/null
@@ -389,10 +397,11 @@ function do_finish()
 	# WTF, it is so ugly! It must be sunxi_mbr.fex, not sunxi_mbr_xxx.fex
 	# Check whether sys_partition_nor.bin is exist, and create sunxi_mbr.fex
 	# for Nor.
+    # 未执行
 	if [ -f sys_partition_nor.bin ]; then 
 		mv -f sys_partition.bin         sys_partition.bin_back
 		cp -f sys_partition_nor.bin     sys_partition.bin
-		update_mbr                      sys_partition.bin 1 > /dev/null
+		update_mbr                      sys_partition.bin 1 #> /dev/null
 
 		merge_package full_img.fex      boot0_spinor.fex \
 			u-boot-spinor.fex sunxi_mbr.fex sys_partition.bin
@@ -403,7 +412,9 @@ function do_finish()
 		echo "full_img.fex is empty" > full_img.fex
 	fi
 
-	update_mbr          sys_partition.bin 4 > /dev/null
+    # 这两句话很关键，重点分析这两个工具做了什么
+	update_mbr          sys_partition.bin 4 #> /dev/null
+    # 在这里详细分析了sys_partition.fex文件
 	dragon image.cfg    sys_partition.fex
 
 	if [ -e ${IMG_NAME} ]; then
@@ -466,11 +477,13 @@ function do_pack_android()
 {
 	printf "packing for android\n"
 
+    #${ANDROID_IMAGE_OUT}这个变量要存在
 	if [ -z "${ANDROID_IMAGE_OUT}" ] ; then
 		pack_error "please specify ANDROID_IMAGE_OUT env"
-		exit 1
+		#exit 1
 	fi
 
+    # 这几个都链过来干嘛？
 	ln -s ${ANDROID_IMAGE_OUT}/boot.img boot.fex
 	ln -s ${ANDROID_IMAGE_OUT}/system.img system.fex
 	ln -s ${ANDROID_IMAGE_OUT}/recovery.img recovery.fex
