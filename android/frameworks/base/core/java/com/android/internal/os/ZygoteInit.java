@@ -155,6 +155,9 @@ public class ZygoteInit {
         if (sServerSocket == null) {
             int fileDesc;
             try {
+                // 获取套接字文件描述符，该套接字由init进程记录在ANDROID_SOCKET_zygote
+                // 环境变量中，应用程序Framework使用套接字文件描述符创建LocalServerSocket
+                // 类的实例，并将其与/dev/socket/zygote绑定在一起
                 String env = System.getenv(ANDROID_SOCKET_ENV);
                 fileDesc = Integer.parseInt(env);
             } catch (RuntimeException ex) {
@@ -163,6 +166,7 @@ public class ZygoteInit {
             }
 
             try {
+                // 创建一个LocalServerSocket类的对象并将赋值给sServerSocket静态变量中
                 sServerSocket = new LocalServerSocket(
                         createFileDescriptor(fileDesc));
             } catch (IOException ex) {
@@ -249,6 +253,7 @@ public class ZygoteInit {
     private static void preloadClasses() {
         final VMRuntime runtime = VMRuntime.getRuntime();
 
+        // 获取一个输入流，以便读取"preloaded-classes"文件中记录的类
         InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream(
                 PRELOADED_CLASSES);
         if (is == null) {
@@ -272,15 +277,17 @@ public class ZygoteInit {
             Debug.startAllocCounting();
 
             try {
+                // 在获取输入流的基础上，创建BufferReader对象，并读取"preloaded_classes"文件的内容
                 BufferedReader br
                     = new BufferedReader(new InputStreamReader(is), 256);
 
                 int count = 0;
                 String line;
+                // 逐行分析
                 while ((line = br.readLine()) != null) {
                     // Skip comments and blank lines.
-                    line = line.trim();
-                    if (line.startsWith("#") || line.equals("")) {
+                    line = line.trim(); // 去掉每行最前和最后面的空格
+                    if (line.startsWith("#") || line.equals("")) {  // 忽略注释和空行
                         continue;
                     }
 
@@ -288,6 +295,9 @@ public class ZygoteInit {
                         if (false) {
                             Log.v(TAG, "Preloading " + line + "...");
                         }
+                        // 将读到的类动态地加在到内存中。
+                        // Class.forName()方法并非真在内存中生成指定类的实例，它只是
+                        // 把类的信息加载到内存中，并初始化静态变量
                         Class.forName(line);
                         if (Debug.getGlobalAllocSize() > PRELOAD_GC_THRESHOLD) {
                             if (false) {
@@ -591,6 +601,7 @@ public class ZygoteInit {
 
             Log.i(TAG, "Accepting command socket connections");
 
+            // 处理新Android应用程序运行请求
             runSelectLoop();
 
             closeServerSocket();
