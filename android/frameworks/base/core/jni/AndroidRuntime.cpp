@@ -771,6 +771,14 @@ int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv)
      * If this call succeeds, the VM is ready, and we can start issuing
      * JNI calls.
      */
+    /*
+     * 初始化虚拟机
+     *
+     * JavaVM** p_vm: 生成的JavaVM类的接口指针
+     * JNIEnv** p_env: JNIEnv类的接口指针，方便访问虚拟机
+     * void* vm_args: 已设置的虚拟机选项
+     * 如果调用成功则VM准备就绪，接着就可以启动JNI调用
+     */
     if (JNI_CreateJavaVM(pJavaVM, pEnv, &initArgs) < 0) {
         ALOGE("JNI_CreateJavaVM failed\n");
         goto bail;
@@ -786,7 +794,7 @@ bail:
 char* AndroidRuntime::toSlashClassName(const char* className)
 {
     char* result = strdup(className);
-    for (char* cp = result; *cp != '\0'; cp++) {
+    for (char* cp = result; *cp != '\0'; cp++) {    // 将.替换为/，也就是将类替换为目录
         if (*cp == '.') {
             *cp = '/';
         }
@@ -843,6 +851,9 @@ void AndroidRuntime::start(const char* className, const char* options)
     /*
      * Register android functions.
      */
+    /*
+     * 这里调用gRegJNI数组，注册其中的Android函数
+     */
     if (startReg(env) < 0) {
         ALOGE("Unable to register all android natives\n");
         return;
@@ -858,7 +869,7 @@ void AndroidRuntime::start(const char* className, const char* options)
     jstring classNameStr;
     jstring optionsStr;
 
-    stringClass = env->FindClass("java/lang/String");
+    stringClass = env->FindClass("java/lang/String");       // 在类名解析出的路径下查找指定的类
     assert(stringClass != NULL);
     strArray = env->NewObjectArray(2, stringClass, NULL);
     assert(strArray != NULL);
@@ -872,18 +883,21 @@ void AndroidRuntime::start(const char* className, const char* options)
      * Start VM.  This thread becomes the main thread of the VM, and will
      * not return until the VM exits.
      */
-    char* slashClassName = toSlashClassName(className);
-    jclass startClass = env->FindClass(slashClassName);
+    char* slashClassName = toSlashClassName(className);    // 将.替换为/，也就是将类替换为目录
+    jclass startClass = env->FindClass(slashClassName);    // 在类名解析出的路径下查找指定的类
     if (startClass == NULL) {
         ALOGE("JavaVM unable to locate class '%s'\n", slashClassName);
         /* keep going */
     } else {
+        // 查找形式参数为String数组且返回值为Void的main()静态方法
         jmethodID startMeth = env->GetStaticMethodID(startClass, "main",
             "([Ljava/lang/String;)V");
         if (startMeth == NULL) {
             ALOGE("JavaVM unable to find main() in '%s'\n", className);
             /* keep going */
         } else {
+            // 若找到指定类的main()方法，则程序的执行转到虚拟机中运行的Java应用上
+            // (此处是ZygoteInit类)，后面本地域中的C++代码执行流会一直等待，直到虚拟机终止运行
             env->CallStaticVoidMethod(startClass, startMeth, strArray);
 
 #if 0
@@ -1091,6 +1105,7 @@ static void register_jam_procs(const RegJAMProc array[], size_t count)
     }
 }
 
+// 要在虚拟机中使用的JNI函数
 static const RegJNIRec gRegJNI[] = {
     REG_JNI(register_android_debug_JNITest),
     REG_JNI(register_com_android_internal_os_RuntimeInit),

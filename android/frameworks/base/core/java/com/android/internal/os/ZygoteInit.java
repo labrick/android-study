@@ -228,9 +228,9 @@ public class ZygoteInit {
     }
 
     static void preload() {
-        preloadClasses();
-        preloadResources();
-        preloadOpenGL();
+        preloadClasses();       // 预加载类
+        preloadResources();     // 预加载资源文件
+        preloadOpenGL();        // 预加载OpenGL
     }
 
     private static void preloadOpenGL() {
@@ -558,9 +558,11 @@ public class ZygoteInit {
             // Start profiling the zygote initialization.
             SamplingProfilerIntegration.start();
 
+            // 绑定套接字，接收新Android应用运行请求
             registerZygoteSocket();
             EventLog.writeEvent(LOG_BOOT_PROGRESS_PRELOAD_START,
                 SystemClock.uptimeMillis());
+            // 加载Android Application Framework使用的类与资源
             preload();
             EventLog.writeEvent(LOG_BOOT_PROGRESS_PRELOAD_END,
                 SystemClock.uptimeMillis());
@@ -580,6 +582,7 @@ public class ZygoteInit {
                 throw new RuntimeException(argv[0] + USAGE_STRING);
             }
 
+            // 运行SystemServer
             if (argv[1].equals("start-system-server")) {
                 startSystemServer();
             } else if (!argv[1].equals("")) {
