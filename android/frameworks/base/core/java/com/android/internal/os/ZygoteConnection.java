@@ -169,6 +169,8 @@ class ZygoteConnection {
         FileDescriptor[] descriptors;
 
         try {
+            // 读取请求信息，包括创建新进程的参数选项，以"line count +
+            // 字符串数组"形式存在
             args = readArgumentList();
             descriptors = mSocket.getAncillaryFileDescriptors();
         } catch (IOException ex) {
@@ -196,6 +198,8 @@ class ZygoteConnection {
         FileDescriptor serverPipeFd = null;
 
         try {
+            // 分析请求信息中的字符串数组，为运行进程设置好各个选项，具体包括设置
+            // 应用程序的gid、uid，调试标记处理，设置rlimit，以及检查运行权限等。
             parsedArgs = new Arguments(args);
 
             applyUidSecurityPolicy(parsedArgs, peer, peerSecurityContext);
@@ -220,6 +224,8 @@ class ZygoteConnection {
                 ZygoteInit.setCloseOnExec(serverPipeFd, true);
             }
 
+            // 创建新进程。接收上面分析好的参数，调用Zygote类的本地方法forkAndSpecialize
+            // 然后调用本地方法fork()，创建新进程，并根据新创建的进程传递的选项，设置uid/gid/rlimit等
             pid = Zygote.forkAndSpecialize(parsedArgs.uid, parsedArgs.gid, parsedArgs.gids,
                     parsedArgs.debugFlags, rlimits, parsedArgs.mountExternal, parsedArgs.seInfo,
                     parsedArgs.niceName);
@@ -239,6 +245,8 @@ class ZygoteConnection {
                 // in child
                 IoUtils.closeQuietly(serverPipeFd);
                 serverPipeFd = null;
+                // 该函数用来加载新进程所需要的类，并调用类的main()方法，启动新的应用程序。
+                // 直到运行的Android应用程序终止，该函数才会返回。
                 handleChildProc(parsedArgs, descriptors, childPipeFd, newStderr);
 
                 // should never get here, the child is expected to either
@@ -248,6 +256,8 @@ class ZygoteConnection {
                 // in parent...pid of < 0 means failure
                 IoUtils.closeQuietly(childPipeFd);
                 childPipeFd = null;
+                // Zygote返回新进程创建是否成功，若成功，则返回进程的pid。最后，请求完成后，
+                // 断开连接，关闭套接字。
                 return handleParentProc(pid, descriptors, serverPipeFd, parsedArgs);
             }
         } finally {

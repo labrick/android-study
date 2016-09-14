@@ -211,6 +211,7 @@ class ServerThread {
         boolean disableNonCoreServices = SystemProperties.getBoolean("config.disable_noncore", false);
         boolean disableNetwork = SystemProperties.getBoolean("config.disable_network", false);
 
+        // 启动核心服务
         try {
             Slog.i(TAG, "Display Manager");
             display = new DisplayManagerService(context, wmHandler);
@@ -1184,11 +1185,13 @@ public class SystemServer {
 
         Environment.setUserRequired(true);
 
+        // 加载android_servers本地库
         System.loadLibrary("android_servers");
 
         Slog.i(TAG, "Entered the Android system server!");
 
         // Initialize native services.
+        // JNI函数？
         nativeInit();
 
         // This used to be its own separate thread, but now it is

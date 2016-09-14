@@ -526,7 +526,7 @@ public class ZygoteInit {
             "--capabilities=" + capabilities + "," + capabilities,
             "--runtime-init",
             "--nice-name=system_server",
-            "com.android.server.SystemServer",
+            "com.android.server.SystemServer",      // 指定SystemServer类
         };
         ZygoteConnection.Arguments parsedArgs = null;
 
@@ -538,6 +538,9 @@ public class ZygoteInit {
             ZygoteConnection.applyInvokeWithSystemProperty(parsedArgs);
 
             /* Request to fork the system server process */
+            // 调用forkSystemServer()方法创建新进程，并运行SystemServer。
+            // 与应用进程不同，该进程必须运行，因此再forkSystemServer()方法
+            // 中必须检查生成的SystemServer进程工作是否正常
             pid = Zygote.forkSystemServer(
                     parsedArgs.uid, parsedArgs.gid,
                     parsedArgs.gids,
@@ -551,6 +554,8 @@ public class ZygoteInit {
 
         /* For child process */
         if (pid == 0) {
+            // 运行com.android.server.SystemServer类的main()方法。
+            // 其中会加载名称为android_servers的本地库。
             handleSystemServerProcess(parsedArgs);
         }
 
@@ -630,11 +635,14 @@ public class ZygoteInit {
      * @throws MethodAndArgsCaller in a child process when a main() should
      * be executed.
      */
+    // 采用典型的异步处理方式
     private static void runSelectLoop() throws MethodAndArgsCaller {
         ArrayList<FileDescriptor> fds = new ArrayList<FileDescriptor>();
         ArrayList<ZygoteConnection> peers = new ArrayList<ZygoteConnection>();
         FileDescriptor[] fdArray = new FileDescriptor[4];
 
+        // 将套接字的描述符添加到描述符数组中，保存在数组中的第0个index中。
+        // 程序将使用该描述符处理来自外部的连接请求。
         fds.add(sServerSocket.getFileDescriptor());
         peers.add(null);
 
@@ -661,6 +669,9 @@ public class ZygoteInit {
 
             try {
                 fdArray = fds.toArray(fdArray);
+                // selectReadable是一个被注册为JNI本地方法的本地函数。
+                // 该方法用来监视参数传递过来的文件描述符数组，若描述符目录中
+                // 存在相关事件，则返回其在数组中的索引(Index)
                 index = selectReadable(fdArray);
             } catch (IOException ex) {
                 throw new RuntimeException("Error in select()", ex);
@@ -668,12 +679,13 @@ public class ZygoteInit {
 
             if (index < 0) {
                 throw new RuntimeException("Error in select()");
-            } else if (index == 0) {
+            } else if (index == 0) {    // 处理index为0的套接字描述符中发生的输入输出事件
                 ZygoteConnection newPeer = acceptCommandPeer();
                 peers.add(newPeer);
                 fds.add(newPeer.getFileDesciptor());
             } else {
                 boolean done;
+                // 处理新连接的输入输出套接字，并生成新的Android应用
                 done = peers.get(index).runOnce();
 
                 if (done) {
