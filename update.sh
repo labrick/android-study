@@ -38,7 +38,7 @@ for update_dir in ${update_dir_list[@]}; do
     # ${update_dir#*SDK/}   #号是运算符，*SDK/表示从左边开始删除第一个SDK/号及左边的所有字符
     DIRNAME=$(dirname ${update_dir#*SDK/})
     
-    echo ${update_dir}
+    update_info ${update_dir}
     echo ${DIRNAME}
     echo ${BASENAME}
 
