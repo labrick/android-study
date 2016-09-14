@@ -8,6 +8,7 @@ ANDROIDDIR=/home/lab302/robot/R16-Parrot_SDK
 update_dir_list=(
 ${ANDROIDDIR}/android/system/core
 ${ANDROIDDIR}/android/frameworks/base/core
+${ANDROIDDIR}/android/frameworks/base/services
 ${LINUXDIR}/lichee/linux-3.4/arch/arm
 ${LINUXDIR}/lichee/tools/pack
 )
