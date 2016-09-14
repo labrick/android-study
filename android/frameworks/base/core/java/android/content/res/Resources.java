@@ -1961,6 +1961,7 @@ public class Resources {
      */
     public final void startPreloading() {
         synchronized (sSync) {
+            // 如果资源已经加载，则抛出异常
             if (sPreloaded) {
                 throw new IllegalStateException("Resources already preloaded");
             }

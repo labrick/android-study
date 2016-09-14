@@ -232,8 +232,8 @@ public class ZygoteInit {
     }
 
     static void preload() {
-        preloadClasses();       // 预加载类
-        preloadResources();     // 预加载资源文件
+        preloadClasses();       // 预加载类(18202ms)
+        preloadResources();     // 预加载资源文件(1823ms)
         preloadOpenGL();        // 预加载OpenGL
     }
 
@@ -353,6 +353,9 @@ public class ZygoteInit {
      * These tend to be a few Kbytes, but are frequently in the 20-40K
      * range, and occasionally even larger.
      */
+    // Framework中的资源(字符串/颜色/图像文件/音频文件等，分两类：Drawable/
+    // XML管理的资源)，应用程序不能直接访问这些资源，需要通过Android开发工具
+    // 自动生成的R类来访问。通过R类可访问的资源组成信息记录在xml中
     private static void preloadResources() {
         final VMRuntime runtime = VMRuntime.getRuntime();
 
@@ -360,12 +363,15 @@ public class ZygoteInit {
         try {
             System.gc();
             runtime.runFinalizationSync();
+            // 资源分为系统资源与应用程序资源。在访问系统资源时，需要先调用
+            // Resources类的静态方法getSystem()，而后使用其返回的对象加载系统资源
             mResources = Resources.getSystem();
             mResources.startPreloading();
             if (PRELOAD_RESOURCES) {
                 Log.i(TAG, "Preloading resources...");
 
                 long startTime = SystemClock.uptimeMillis();
+                // 加载drawables资源
                 TypedArray ar = mResources.obtainTypedArray(
                         com.android.internal.R.array.preloaded_drawables);
                 int N = preloadDrawables(runtime, ar);
@@ -374,6 +380,7 @@ public class ZygoteInit {
                         + (SystemClock.uptimeMillis()-startTime) + "ms.");
 
                 startTime = SystemClock.uptimeMillis();
+                // 加载xml资源
                 ar = mResources.obtainTypedArray(
                         com.android.internal.R.array.preloaded_color_state_lists);
                 N = preloadColorStateLists(runtime, ar);
@@ -511,6 +518,7 @@ public class ZygoteInit {
             OsConstants.CAP_SYS_TTY_CONFIG
         );
         /* Hardcoded command line to start the system server */
+        /* SystemServer的启动参数 */
         String args[] = {
             "--setuid=1000",
             "--setgid=1000",
@@ -601,7 +609,7 @@ public class ZygoteInit {
 
             Log.i(TAG, "Accepting command socket connections");
 
-            // 处理新Android应用程序运行请求
+            // 至此虚拟机启动完成，准备处理新Android应用程序运行请求
             runSelectLoop();
 
             closeServerSocket();
