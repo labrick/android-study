@@ -52,7 +52,7 @@ for update_dir in ${update_dir_list[@]}; do
     mkdir -p .tmp/${DIRNAME} ${DIRNAME}
     
     echo "start update ${update_dir} ..." 
-    sleep 1
+    #sleep 1
     if [ -d ".tmp/${DIRNAME}/${BASENAME}" ]; then
         rm -rf .tmp/${DIRNAME}/${BASENAME}
     fi
