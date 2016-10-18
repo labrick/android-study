@@ -20,17 +20,19 @@
  * linux/arch/m68k/tools/amiga/dmesg.c -- 提取存储在RAM中的kernel信息
  *                                        (kernel command line参数 `debug=mem`)
  */
+// Loosely speaking dmesg is a program that dumps /proc/kmsg. In addition, it provides
+// some filtering capabilities to weed out logs that the user isn't interested in.
 
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-
 // kernel信息在RAM中的位置
 #define CHIPMEM_START	0x00000000
 #define CHIPMEM_END	0x00200000	/* overridden by argv[1] */
 
+// SAVE/KMSG对应的ASCII码
 #define SAVEKMSG_MAGIC1	0x53415645	/* 'SAVE' */
 #define SAVEKMSG_MAGIC2	0x4B4D5347	/* 'KMSG' */
 
@@ -39,7 +41,7 @@ struct savekmsg {
     u_long magic2;	/* SAVEKMSG_MAGIC2 */
     u_long magicptr;	/* address of magic1 */
     u_long size;
-    char data[0];
+    char data[0];   // 指针的一种定义方式，但是char* ?
 };
 
 
@@ -71,6 +73,8 @@ int main(int argc, char *argv[])
 	    printf("Found %ld bytes at 0x%08lx\n", m->size, (u_long)&m->data);
 	    puts(">>>>>>>>>>>>>>>>>>>>");
 	    fflush(stdout);
+        // int write(int handle, void *buf, int nbyte);
+        // 将log信息输出到标准输出中stdout:1
 	    write(1, &m->data, m->size);
 	    fflush(stdout);
 	    puts("<<<<<<<<<<<<<<<<<<<<");
