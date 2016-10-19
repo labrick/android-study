@@ -9,6 +9,7 @@ update_dir_list=(
 ${ANDROIDDIR}/android/system/core
 ${ANDROIDDIR}/android/frameworks/base/core
 ${ANDROIDDIR}/android/frameworks/base/services
+${ANDROIDDIR}/android/frameworks/base/cmds
 ${LINUXDIR}/lichee/linux-3.4/arch/arm
 ${LINUXDIR}/lichee/linux-3.4/arch/m68k/tools
 ${LINUXDIR}/lichee/tools/pack
