@@ -61,6 +61,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import com.android.internal.content.PackageHelper;
 
+// 这是标准的java程序？？？？
 public final class Pm {
     IPackageManager mPm;
     IUserManager mUm;
@@ -81,11 +82,13 @@ public final class Pm {
 
     public void run(String[] args) {
         boolean validCommand = false;
+        // 如果参数少于1个，就是直接运行，没意义的
         if (args.length < 1) {
             showUsage();
             return;
         }
 
+        // 这两个东西比较特殊，需要研究下
         mUm = IUserManager.Stub.asInterface(ServiceManager.getService("user"));
         mPm = IPackageManager.Stub.asInterface(ServiceManager.getService("package"));
         if (mPm == null) {
@@ -97,6 +100,7 @@ public final class Pm {
         String op = args[0];
         mNextArg = 1;
 
+        // 下面解析第第一个参数
         if ("list".equals(op)) {
             runList();
             return;
@@ -311,6 +315,9 @@ public final class Pm {
         String filter = nextArg();
 
         try {
+            // app即Package的信息会封装在PackageInfo，通过PackageManagerService
+            // 或PackageManager可以获取系统所有已经安装的app，并根据opt或nextargs
+            // 获取对应的数据。
             final List<PackageInfo> packages = getInstalledPackages(mPm, getFlags, userId);
 
             int count = packages.size();
@@ -1557,6 +1564,7 @@ public final class Pm {
         return arg;
     }
 
+    // 精心安排的设置选项啊
     private static void showUsage() {
         System.err.println("usage: pm list packages [-f] [-d] [-e] [-s] [-3] [-i] [-u] [--user USER_ID] [FILTER]");
         System.err.println("       pm list permission-groups");

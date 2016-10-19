@@ -1,7 +1,14 @@
 # Script to start "pm" on the device, which has a very rudimentary
 # shell.
 #
+# pm等命令的实现，主要是通过Java层，并且封装形式是jar，这一点个人觉
+# 得很强大，也很神奇。对于可执行档，一般都是c/c++去实现，实现起来没有
+# java灵活，现在java层也可以进行封装，实现交互的tool，google的这个
+# 设计和功能，确实非常强大。
 base=/system
+# 导入pm.jar可执行文件
 export CLASSPATH=$base/framework/pm.jar
+# 通过zygote(zygote是app_process的别名)去启动Pm.java并将参数传给
+# Pm.java的main函数，根据不同的参数，处理不同的场景。
 exec app_process $base/bin com.android.commands.pm.Pm "$@"
 

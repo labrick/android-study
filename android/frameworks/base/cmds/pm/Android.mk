@@ -1,5 +1,7 @@
 # Copyright 2007 The Android Open Source Project
 #
+# 这里是编译出pm.jar？？，adb shell中执行的pm都是这个jar文件？？
+# 这是第一步
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 

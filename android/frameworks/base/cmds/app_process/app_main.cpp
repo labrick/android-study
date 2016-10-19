@@ -174,7 +174,8 @@ int main(int argc, char* const argv[])
     }
     mArgLen--;
 
-    AppRuntime runtime;
+    // AppRuntime继承自AndroidRuntime
+    AppRuntime runtime;             // 实例化AppRuntime对象
     const char* argv0 = argv[0];
 
     // Process command line arguments
@@ -183,7 +184,7 @@ int main(int argc, char* const argv[])
     argv++;
 
     // Everything up to '--' or first non '-' arg goes to the vm
-
+    // 分析传递来的参数，并传给AppRuntime对象，并以此生成虚拟机选项
     int i = runtime.addVmArguments(argc, argv);
 
     // Parse runtime arguments.  Stop at first unrecognized option.
@@ -219,7 +220,10 @@ int main(int argc, char* const argv[])
 
     runtime.mParentDir = parentDir;
 
+    // 加载类，并执行main函数
     if (zygote) {
+        // 若想运行Zygote类(java)，必须先生成Dalvik虚拟机，再在Dalvik虚拟机
+        // 上装载运行ZygoteInit类，执行这一任务的就是app_process进程。(IAF:142)
         runtime.start("com.android.internal.os.ZygoteInit",
                 startSystemServer ? "start-system-server" : "");
     } else if (className) {
