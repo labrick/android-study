@@ -658,11 +658,12 @@ static int console_init_action(int nargs, char **args)
         have_console = 1;
     close(fd);
 
-    // if( load_565rle_image(INIT_IMAGE_FILE) ) {       // 加载启动log图像文件
+    // 加载启动log图像文件
+    // if( load_565rle_image(INIT_IMAGE_FILE) ) {
     if( strcmp(bootmode, "charger") && load_argb8888_image(INIT_IMAGE_FILE) ) {
-        fd = open("/dev/tty0", O_WRONLY);
-        if (fd >= 0) {
-            const char *msg;
+        fd = open("/dev/tty0", O_WRONLY);       // 这里打开了当前的显示终端
+        if (fd >= 0) {              // 大于零不是说打开成功吗？怎么还显示Android字样？
+            const char *msg;        // 这里别人的注释是：如果没有这张图片就显示Android字样
                 msg = "\n"
             "\n"
             "\n"
@@ -1108,6 +1109,7 @@ int main(int argc, char **argv)
     action_for_each_trigger("early-fs", action_add_queue_tail);
     /* skip mounting filesystems in charger mode */
     if (!is_charger) {
+        // 显示initlog.rle，也就是android第二张图片
         queue_builtin_action(console_init_action, "console_init");
         action_for_each_trigger("fs", action_add_queue_tail);
         action_for_each_trigger("post-fs", action_add_queue_tail);
@@ -1133,6 +1135,7 @@ int main(int argc, char **argv)
     queue_builtin_action(check_startup_action, "check_startup");
 
     if (is_charger) {
+        // 如果是charger模式，则调用charger.c
         queue_builtin_action(console_init_action, "console_init");
         action_for_each_trigger("charger", action_add_queue_tail);
     } else {

@@ -13,6 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# An Android.mk file must begin with the definition of the LOCAL_PATH 
+# variable. It is used to locate source files in the development tree. 
+# In this example, the macro function 'my-dir', provided by the build 
+# system, is used to return the path of the current directory (i.e. the 
+# directory containing the Android.mk file itself).
 LOCAL_PATH := $(my-dir)
 
 include $(call first-makefiles-under,$(LOCAL_PATH))
