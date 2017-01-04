@@ -152,6 +152,7 @@ static void publish_socket(const char *name, int fd)
     fcntl(fd, F_SETFD, 0);
 }
 
+// 启动服务svc
 void service_start(struct service *svc, const char *dynamic_args)
 {
     struct stat s;
@@ -231,6 +232,7 @@ void service_start(struct service *svc, const char *dynamic_args)
         }
     }
 
+    // 下面创建新进程运行服务
     NOTICE("starting '%s'\n", svc->name);
 
     pid = fork();
@@ -242,9 +244,12 @@ void service_start(struct service *svc, const char *dynamic_args)
         int fd, sz;
 
         umask(077);
-        if (properties_inited()) {
+        if (properties_inited()) {  // 2. 如果完成了初始化，获取property_workspace
             get_property_workspace(&fd, &sz);
             sprintf(tmp, "%d,%d", dup(fd), sz);
+            // 将得到的property_workspace写入到环境变量ANDROID_PROPERTY_WORKSPACE
+            // ANDROID_PROPERTY_WORKSPACE也是Bionic中实现mmap时所需要得到的，这样
+            // client和server的memory就可以shared了
             add_environment("ANDROID_PROPERTY_WORKSPACE", tmp);
         }
 
@@ -339,6 +344,7 @@ void service_start(struct service *svc, const char *dynamic_args)
                     break;
             }
             arg_ptrs[arg_idx] = '\0';
+            // 这个应该就是真正的执行了
             execve(svc->args[0], (char**) arg_ptrs, (char**) ENV);
         }
         _exit(127);
@@ -489,6 +495,8 @@ static void msg_restart(const char *name)
     }
 }
 
+// 可以在Property中设定控制命令，实现某个service的start和stop，
+// 在命令行中也可以通过start和stop命令实现某个service的start和stop
 void handle_control_message(const char *msg, const char *arg)
 {
     if (!strcmp(msg,"start")) {
@@ -1063,7 +1071,7 @@ int main(int argc, char **argv)
          */
     open_devnull_stdio();       // stdio/stdout/stderr都指向__null__设备
     klog_init();                // 从这里创建__kmsg__设备
-    property_init();            // 属性服务
+    property_init();            // 1. 完成property的环境变量初始化等动作
 
     get_hardware_name(hardware, &revision);
 

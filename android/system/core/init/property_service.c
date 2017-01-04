@@ -125,10 +125,24 @@ typedef struct {
 
 static int init_workspace(workspace *w, size_t size)
 {
+    /* dev is a tmpfs that we can use to carve a shared workspace
+     * out of, so let's do that...
+     */
     void *data;
+    // 创建一个临时的设备
     int fd = open(PROP_FILENAME, O_RDONLY | O_NOFOLLOW);
     if (fd < 0)
         return -1;
+    
+    // 下面怎么少了一部分代码？被移到其他地方去了？
+    // 从kernel中映射出一块内存
+/*  data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    close(fd);
+    fd = open("/dev/__properties__", O_RDONLY);
+    // 删除掉临时的设备，但是映射的内存还是存在，fd被保存下来，而且只有data这个mmap有读写的权限
+    // 其它人得到的fd都是只读的，而且/dev/__properties__已经被删除了，其它人已经不能在得到写权限了。
+    unlink("/dev/__properties__");
+    w->data = data; */
 
     w->size = size;
     w->fd = fd;
@@ -139,15 +153,18 @@ static workspace pa_workspace;
 
 static int init_property_area(void)
 {
+    // 如果已经初始化了就直接返回
     if (property_area_inited)
         return -1;
 
     if(__system_property_area_init())
         return -1;
 
+    // 初始化workspace，得到shared memory的fd, size, data
     if(init_workspace(&pa_workspace, 0))
         return -1;
 
+    // pa指向shared memory的头，实际就是头信息，并初始化
     fcntl(pa_workspace.fd, F_SETFD, FD_CLOEXEC);
 
     property_area_inited = 1;
@@ -256,6 +273,7 @@ static int check_perms(const char *name, unsigned int uid, unsigned int gid, cha
     return 0;
 }
 
+// 直接调用的Bionic中的__system_property_find，然后直接将value返回
 int __property_get(const char *name, char *value)
 {
     return __system_property_get(name, value);
@@ -326,10 +344,12 @@ int property_set(const char *name, const char *value)
 
     if(pi != 0) {
         /* ro.* properties may NEVER be modified once set */
+        // ro，只读的property只能被设定一次
         if(!strncmp(name, "ro.", 3)) return -1;
 
         __system_property_update(pi, value, valuelen);
     } else {
+        // 将key和value写入到shared memory中
         ret = __system_property_add(name, namelen, value, valuelen);
         if (ret < 0) {
             ERROR("Failed to set '%s'='%s'\n", name, value);
@@ -369,6 +389,8 @@ int property_set(const char *name, const char *value)
     return 0;
 }
 
+// property_service中property_set，对于动态调用时，client实际调用的是
+// handle_property_set_fd()，而不是property_set
 void handle_property_set_fd()
 {
     prop_msg msg;
@@ -403,6 +425,8 @@ void handle_property_set_fd()
 
     switch(msg.cmd) {
     case PROP_MSG_SETPROP:
+        // 对于用户动态调用的property_set，server会收到从Bionic中发送的
+        // PROP_MSG_SETPROP命令，收到后，检查权限，然后调用property_set进行设置。
         msg.name[PROP_NAME_MAX-1] = 0;
         msg.value[PROP_VALUE_MAX-1] = 0;
 
@@ -414,7 +438,7 @@ void handle_property_set_fd()
 
         getpeercon(s, &source_ctx);
 
-        // 以ctl开头的消息并非请求更改属性值，而是请求进程启动与终止消息
+        // 以ctl开头的消息并非请求更改属性值，而是请求进程启动与终止消息，也就是控制命令
         if(memcmp(msg.name,"ctl.",4) == 0) {
             // Keep the old close-socket-early behavior when handling
             // ctl.* properties.
@@ -686,6 +710,7 @@ void start_property_service(void)
 {
     int fd;
 
+    // load_properties_from_file就是从文件中读取key和value，并把他们property_set(key, value);
     load_properties_from_file(PROP_PATH_SYSTEM_BUILD);      // 获取之前的几个属性值
     load_properties_from_file(PROP_PATH_SYSTEM_DEFAULT);
     load_override_properties();
@@ -693,6 +718,8 @@ void start_property_service(void)
     load_persistent_properties();                 // 读取/data/property目录路中的属性值
 
     // 创建套接字，以便init进程在收到子进程终止的SIGCHLD信号时调用相应的handler
+    // PROP_SERVICE_NAME很熟悉的名字，在Bionic中的send_prop_msg时会连接这个属性并发送命令，
+    // server端就是在这里实现的
     fd = create_socket(PROP_SERVICE_NAME, SOCK_STREAM, 0666, 0, 0);
     if(fd < 0) return;
     fcntl(fd, F_SETFD, FD_CLOEXEC);

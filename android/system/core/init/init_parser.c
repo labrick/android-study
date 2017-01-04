@@ -607,6 +607,7 @@ void queue_all_property_triggers()
     }
 }
 
+// 启动property_service
 void queue_builtin_action(int (*func)(int nargs, char **args), char *name)
 {
     struct action *act;
