@@ -2,7 +2,7 @@
 
 # 注意字符串截取采用的是SDK/作为分隔符
 
-LINUXDIR=/mnt/hdd2/ProjectGroup/R16-Parrot_SDK
+LINUXDIR=/mnt/hdd2/ProjectGroup/allwinner/R16-Parrot_SDK
 ANDROIDDIR=/home/lab302/robot/R16-Parrot_SDK
 
 update_dir_list=(
