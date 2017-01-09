@@ -498,6 +498,7 @@ service drm /system/bin/drmserver
     user drm
     group drm system inet drmrpc
 
+# 媒体服务器，系统进程，运行AudioFlinger/MediaPlayerService/CameraService/AudioPolicyService等
 service media /system/bin/mediaserver
     class main
     user media
