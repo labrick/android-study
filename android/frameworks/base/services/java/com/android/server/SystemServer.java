@@ -193,10 +193,10 @@ class ServerThread {
 
             Slog.i(TAG, "Power Manager");
             power = new PowerManagerService();
-            ServiceManager.addService(Context.POWER_SERVICE, power);
+            ServiceManager.addService(Context.POWER_SERVICE, power);    // 添加电源管理服务
 
             Slog.i(TAG, "Activity Manager");
-            context = ActivityManagerService.main(factoryTest);
+            context = ActivityManagerService.main(factoryTest);         // Activity为什么采用不同的方式启动服务？
         } catch (RuntimeException e) {
             Slog.e("System", "******************************************");
             Slog.e("System", "************ Failure starting bootstrap service", e);
@@ -215,7 +215,7 @@ class ServerThread {
         try {
             Slog.i(TAG, "Display Manager");
             display = new DisplayManagerService(context, wmHandler);
-            ServiceManager.addService(Context.DISPLAY_SERVICE, display, true);
+            ServiceManager.addService(Context.DISPLAY_SERVICE, display, true);  // 显示服务
 
             Slog.i(TAG, "Telephony Registry");
             telephonyRegistry = new TelephonyRegistry(context);
@@ -283,17 +283,17 @@ class ServerThread {
 
             Slog.i(TAG, "Battery Service");
             battery = new BatteryService(context, lights);
-            ServiceManager.addService("battery", battery);
+            ServiceManager.addService("battery", battery);      // 这里和POWER服务有什么区别？
             dpm = new DynamicPManagerService(context);
-            ServiceManager.addService(DynamicPManager.DPM_SERVICE, dpm);
+            ServiceManager.addService(DynamicPManager.DPM_SERVICE, dpm);    // 动态电源管理服务
 
             Slog.i(TAG, "Vibrator Service");
             vibrator = new VibratorService(context);
-            ServiceManager.addService("vibrator", vibrator);
+            ServiceManager.addService("vibrator", vibrator);    // 震动服务
 
             Slog.i(TAG, "Consumer IR Service");
             consumerIr = new ConsumerIrService(context);
-            ServiceManager.addService(Context.CONSUMER_IR_SERVICE, consumerIr);
+            ServiceManager.addService(Context.CONSUMER_IR_SERVICE, consumerIr); // 红外？
 
             // only initialize the power service after we have started the
             // lights service, content providers and the battery service.
@@ -303,7 +303,7 @@ class ServerThread {
 
             Slog.i(TAG, "Alarm Manager");
             alarm = new AlarmManagerService(context);
-            ServiceManager.addService(Context.ALARM_SERVICE, alarm);
+            ServiceManager.addService(Context.ALARM_SERVICE, alarm);    // 闹钟服务？
 
             Slog.i(TAG, "Init Watchdog");
             Watchdog.getInstance().init(context, battery, power, alarm,
@@ -317,8 +317,8 @@ class ServerThread {
             wm = WindowManagerService.main(context, power, display, inputManager,
                     wmHandler, factoryTest != SystemServer.FACTORY_TEST_LOW_LEVEL,
                     !firstBoot, onlyCore);
-            ServiceManager.addService(Context.WINDOW_SERVICE, wm);
-            ServiceManager.addService(Context.INPUT_SERVICE, inputManager);
+            ServiceManager.addService(Context.WINDOW_SERVICE, wm);      // 窗口服务
+            ServiceManager.addService(Context.INPUT_SERVICE, inputManager); // 输入服务？？
 
             ActivityManagerService.self().setWindowManager(wm);
 
@@ -343,7 +343,7 @@ class ServerThread {
             } else {
                 Slog.i(TAG, "Bluetooth Manager Service");
                 bluetooth = new BluetoothManagerService(context);
-                ServiceManager.addService(BluetoothAdapter.BLUETOOTH_MANAGER_SERVICE, bluetooth);
+                ServiceManager.addService(BluetoothAdapter.BLUETOOTH_MANAGER_SERVICE, bluetooth);   // 蓝牙适配服务
             }
         } catch (RuntimeException e) {
             Slog.e("System", "******************************************");
@@ -372,7 +372,7 @@ class ServerThread {
                 try {
                     Slog.i(TAG, "Input Method Service");
                     imm = new InputMethodManagerService(context, wm);
-                    ServiceManager.addService(Context.INPUT_METHOD_SERVICE, imm);
+                    ServiceManager.addService(Context.INPUT_METHOD_SERVICE, imm);   // 输入法服务，和输入服务有什么区别？
                 } catch (Throwable e) {
                     reportWtf("starting Input Manager Service", e);
                 }
@@ -445,7 +445,7 @@ class ServerThread {
                 try {
                     Slog.i(TAG, "Status Bar");
                     statusBar = new StatusBarManagerService(context, wm);
-                    ServiceManager.addService(Context.STATUS_BAR_SERVICE, statusBar);
+                    ServiceManager.addService(Context.STATUS_BAR_SERVICE, statusBar);   // 状态栏服务
                 } catch (Throwable e) {
                     reportWtf("starting StatusBarManagerService", e);
                 }
@@ -454,7 +454,7 @@ class ServerThread {
             if (!disableNonCoreServices) {
                 try {
                     Slog.i(TAG, "Clipboard Service");
-                    ServiceManager.addService(Context.CLIPBOARD_SERVICE,
+                    ServiceManager.addService(Context.CLIPBOARD_SERVICE,            // 剪切板服务
                             new ClipboardService(context));
                 } catch (Throwable e) {
                     reportWtf("starting Clipboard Service", e);
@@ -465,7 +465,7 @@ class ServerThread {
                 try {
                     Slog.i(TAG, "NetworkManagement Service");
                     networkManagement = NetworkManagementService.create(context);
-                    ServiceManager.addService(Context.NETWORKMANAGEMENT_SERVICE, networkManagement);
+                    ServiceManager.addService(Context.NETWORKMANAGEMENT_SERVICE, networkManagement);    // 网络管理服务
                 } catch (Throwable e) {
                     reportWtf("starting NetworkManagement Service", e);
                 }
@@ -475,7 +475,7 @@ class ServerThread {
                 try {
                     Slog.i(TAG, "Text Service Manager Service");
                     tsms = new TextServicesManagerService(context);
-                    ServiceManager.addService(Context.TEXT_SERVICES_MANAGER_SERVICE, tsms);
+                    ServiceManager.addService(Context.TEXT_SERVICES_MANAGER_SERVICE, tsms); // 文本服务啥个意思？
                 } catch (Throwable e) {
                     reportWtf("starting Text Service Manager Service", e);
                 }
@@ -485,7 +485,7 @@ class ServerThread {
                 try {
                     Slog.i(TAG, "NetworkStats Service");
                     networkStats = new NetworkStatsService(context, networkManagement, alarm);
-                    ServiceManager.addService(Context.NETWORK_STATS_SERVICE, networkStats);
+                    ServiceManager.addService(Context.NETWORK_STATS_SERVICE, networkStats);     // 网络状态服务
                 } catch (Throwable e) {
                     reportWtf("starting NetworkStats Service", e);
                 }
@@ -495,7 +495,7 @@ class ServerThread {
                     networkPolicy = new NetworkPolicyManagerService(
                             context, ActivityManagerService.self(), power,
                             networkStats, networkManagement);
-                    ServiceManager.addService(Context.NETWORK_POLICY_SERVICE, networkPolicy);
+                    ServiceManager.addService(Context.NETWORK_POLICY_SERVICE, networkPolicy);   // 网络策略服务
                 } catch (Throwable e) {
                     reportWtf("starting NetworkPolicy Service", e);
                 }
@@ -503,7 +503,7 @@ class ServerThread {
                try {
                     Slog.i(TAG, "Wi-Fi P2pService");
                     wifiP2p = new WifiP2pService(context);
-                    ServiceManager.addService(Context.WIFI_P2P_SERVICE, wifiP2p);
+                    ServiceManager.addService(Context.WIFI_P2P_SERVICE, wifiP2p);   // WIFI直连服务（无AP）
                 } catch (Throwable e) {
                     reportWtf("starting Wi-Fi P2pService", e);
                 }
@@ -511,7 +511,7 @@ class ServerThread {
                try {
                     Slog.i(TAG, "Wi-Fi Service");
                     wifi = new WifiService(context);
-                    ServiceManager.addService(Context.WIFI_SERVICE, wifi);
+                    ServiceManager.addService(Context.WIFI_SERVICE, wifi);  // WIFI服务
                 } catch (Throwable e) {
                     reportWtf("starting Wi-Fi Service", e);
                 }
@@ -519,7 +519,7 @@ class ServerThread {
                 try {
                 	   Slog.i(TAG, "Ethernet Service");
                 	   ethernet = new EthernetService(context);
-                	   ServiceManager.addService(Context.ETHERNET_SERVICE, ethernet);
+                	   ServiceManager.addService(Context.ETHERNET_SERVICE, ethernet);   // 以太网服务
                 } catch (Throwable e) {
                      reportWtf("starting Ethernet Service", e);
                 }
@@ -528,7 +528,7 @@ class ServerThread {
                     Slog.i(TAG, "Connectivity Service");
                     connectivity = new ConnectivityService(
                             context, networkManagement, networkStats, networkPolicy);
-                    ServiceManager.addService(Context.CONNECTIVITY_SERVICE, connectivity);
+                    ServiceManager.addService(Context.CONNECTIVITY_SERVICE, connectivity);  // 连接管理服务
                     networkStats.bindConnectivityManager(connectivity);
                     networkPolicy.bindConnectivityManager(connectivity);
 
@@ -541,7 +541,7 @@ class ServerThread {
                 try {
                     Slog.i(TAG, "Network Service Discovery Service");
                     serviceDiscovery = NsdService.create(context);
-                    ServiceManager.addService(
+                    ServiceManager.addService(                          // 网络发现服务？
                             Context.NSD_SERVICE, serviceDiscovery);
                 } catch (Throwable e) {
                     reportWtf("starting Service Discovery Service", e);
@@ -584,7 +584,7 @@ class ServerThread {
             try {
                 Slog.i(TAG, "Notification Manager");
                 notification = new NotificationManagerService(context, statusBar, lights);
-                ServiceManager.addService(Context.NOTIFICATION_SERVICE, notification);
+                ServiceManager.addService(Context.NOTIFICATION_SERVICE, notification);      // 通知服务
                 networkPolicy.bindNotificationManager(notification);
             } catch (Throwable e) {
                 reportWtf("starting Notification Manager", e);
@@ -602,7 +602,7 @@ class ServerThread {
                 try {
                     Slog.i(TAG, "Location Manager");
                     location = new LocationManagerService(context);
-                    ServiceManager.addService(Context.LOCATION_SERVICE, location);
+                    ServiceManager.addService(Context.LOCATION_SERVICE, location);      // 位置服务
                 } catch (Throwable e) {
                     reportWtf("starting Location Manager", e);
                 }
@@ -619,7 +619,7 @@ class ServerThread {
             if (!disableNonCoreServices) {
                 try {
                     Slog.i(TAG, "Search Service");
-                    ServiceManager.addService(Context.SEARCH_SERVICE,
+                    ServiceManager.addService(Context.SEARCH_SERVICE,           // 搜索服务
                             new SearchManagerService(context));
                 } catch (Throwable e) {
                     reportWtf("starting Search Service", e);
@@ -628,7 +628,7 @@ class ServerThread {
 
             try {
                 Slog.i(TAG, "DropBox Service");
-                ServiceManager.addService(Context.DROPBOX_SERVICE,
+                ServiceManager.addService(Context.DROPBOX_SERVICE,              // ？？？DropBox服务？？
                         new DropBoxManagerService(context, new File("/data/system/dropbox")));
             } catch (Throwable e) {
                 reportWtf("starting DropBoxManagerService", e);
@@ -640,7 +640,7 @@ class ServerThread {
                     Slog.i(TAG, "Wallpaper Service");
                     if (!headless) {
                         wallpaper = new WallpaperManagerService(context);
-                        ServiceManager.addService(Context.WALLPAPER_SERVICE, wallpaper);
+                        ServiceManager.addService(Context.WALLPAPER_SERVICE, wallpaper);    // 壁纸服务
                     }
                 } catch (Throwable e) {
                     reportWtf("starting Wallpaper Service", e);
@@ -650,7 +650,7 @@ class ServerThread {
             if (!disableMedia && !"0".equals(SystemProperties.get("system_init.startaudioservice"))) {
                 try {
                     Slog.i(TAG, "Audio Service");
-                    ServiceManager.addService(Context.AUDIO_SERVICE, new AudioService(context));
+                    ServiceManager.addService(Context.AUDIO_SERVICE, new AudioService(context));    // 音频服务
                 } catch (Throwable e) {
                     reportWtf("starting Audio Service", e);
                 }
@@ -682,7 +682,7 @@ class ServerThread {
                     Slog.i(TAG, "USB Service");
                     // Manage USB host and device support
                     usb = new UsbService(context);
-                    ServiceManager.addService(Context.USB_SERVICE, usb);
+                    ServiceManager.addService(Context.USB_SERVICE, usb);    // USB服务
                 } catch (Throwable e) {
                     reportWtf("starting UsbService", e);
                 }
@@ -691,7 +691,7 @@ class ServerThread {
                     Slog.i(TAG, "Serial Service");
                     // Serial port support
                     serial = new SerialService(context);
-                    ServiceManager.addService(Context.SERIAL_SERVICE, serial);
+                    ServiceManager.addService(Context.SERIAL_SERVICE, serial);  // 串口服务？？？
                 } catch (Throwable e) {
                     Slog.e(TAG, "Failure starting SerialService", e);
                 }
@@ -715,7 +715,7 @@ class ServerThread {
             if (!disableNonCoreServices) {
                 try {
                     Slog.i(TAG, "Backup Service");
-                    ServiceManager.addService(Context.BACKUP_SERVICE,
+                    ServiceManager.addService(Context.BACKUP_SERVICE,   // 备份服务
                             new BackupManagerService(context));
                 } catch (Throwable e) {
                     Slog.e(TAG, "Failure starting Backup Service", e);
@@ -724,7 +724,7 @@ class ServerThread {
                 try {
                     Slog.i(TAG, "AppWidget Service");
                     appWidget = new AppWidgetService(context);
-                    ServiceManager.addService(Context.APPWIDGET_SERVICE, appWidget);
+                    ServiceManager.addService(Context.APPWIDGET_SERVICE, appWidget);    // 插件服务
                 } catch (Throwable e) {
                     reportWtf("starting AppWidget Service", e);
                 }
@@ -739,7 +739,7 @@ class ServerThread {
 
             try {
                 Slog.i(TAG, "DiskStats Service");
-                ServiceManager.addService("diskstats", new DiskStatsService(context));
+                ServiceManager.addService("diskstats", new DiskStatsService(context));  // 磁盘状态服务
             } catch (Throwable e) {
                 reportWtf("starting DiskStats Service", e);
             }
@@ -816,7 +816,7 @@ class ServerThread {
             try {
                 Slog.i(TAG, "Print Service");
                 printManager = new PrintManagerService(context);
-                ServiceManager.addService(Context.PRINT_SERVICE, printManager);
+                ServiceManager.addService(Context.PRINT_SERVICE, printManager); // 打印服务
             } catch (Throwable e) {
                 reportWtf("starting Print Service", e);
             }
@@ -825,7 +825,7 @@ class ServerThread {
                 try {
                     Slog.i(TAG, "Media Router Service");
                     mediaRouter = new MediaRouterService(context);
-                    ServiceManager.addService(Context.MEDIA_ROUTER_SERVICE, mediaRouter);
+                    ServiceManager.addService(Context.MEDIA_ROUTER_SERVICE, mediaRouter);   // media路由服务？？
                 } catch (Throwable e) {
                     reportWtf("starting MediaRouterService", e);
                 }

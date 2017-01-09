@@ -485,6 +485,7 @@ service surfaceflinger /system/bin/surfaceflinger
 
 # "-"传给虚拟机的参数; "--"传给
 # -Xzygote:用来区分要在虚拟机中运行的类是Zygote还是在Zygote中运行的其他Android应用程序
+# --start-system-server 该选项请求在Zygote中生成System Server
 service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
     class main
     socket zygote stream 660 root system
