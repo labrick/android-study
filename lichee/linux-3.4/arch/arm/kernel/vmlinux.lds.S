@@ -1,3 +1,9 @@
+/*
+ * 生成vmlinux.lds文件
+ * vmlinx.lds是连接各个.o文件生成二进制镜像文件vmlinux的链接脚本。
+ * vmlinux是纯粹的未经过任何处理的镜像文集那。
+ */
+
 /* ld script to make ARM Linux kernel
  * taken from the i386 version by Russell King
  * Written by Martin Mares <mj@atrey.karlin.mff.cuni.cz>
