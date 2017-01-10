@@ -163,6 +163,7 @@ struct binder_pri_ptr_cookie {
 	void *cookie;
 };
 
+// 用于Binder IPC数据接收端分析处理IPC数据
 enum BinderDriverReturnProtocol {
 	BR_ERROR = _IOR('r', 0, int),
 	/*
@@ -251,6 +252,7 @@ enum BinderDriverReturnProtocol {
 	 */
 };
 
+// 在Binder IPC数据发送端通过Binder Driver向接收端发送IPC数据时使用
 enum BinderDriverCommandProtocol {
 	BC_TRANSACTION = _IOW('c', 0, struct binder_transaction_data),
 	BC_REPLY = _IOW('c', 1, struct binder_transaction_data),
