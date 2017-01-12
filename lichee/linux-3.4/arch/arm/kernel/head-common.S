@@ -100,7 +100,7 @@ __mmap_switched:
 	str	r2, [r6]			@ Save atags pointer
 	bic	r4, r0, #CR_A			@ Clear 'A' bit
 	stmia	r7, {r0, r4}			@ Save control register values
-	b	start_kernel
+	b	start_kernel        @ 跳转到C程序的start_kernel()函数in .../init/main.c中
 ENDPROC(__mmap_switched)
 
 	.align	2

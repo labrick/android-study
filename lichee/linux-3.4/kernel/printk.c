@@ -1136,6 +1136,9 @@ static int __init console_setup(char *str)
 	return 1;
 }
 __setup("console=", console_setup);
+// 你可以将__setup宏看做一个注册函数，即为内核命令行中控制台相关参数注册
+// 的处理函数。实际上是指，当在内核命令行中碰到console=字符串时，就调用
+// __setup宏的第二个参数所指定的函数，这里就是调用函数console_setup()。
 
 /**
  * add_preferred_console - add a device to the list of preferred consoles.
