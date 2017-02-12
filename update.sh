@@ -14,6 +14,7 @@ ${LINUXDIR}/lichee/linux-3.4/arch/arm
 ${LINUXDIR}/lichee/linux-3.4/arch/m68k/tools
 ${LINUXDIR}/lichee/linux-3.4/drivers/staging/android
 ${LINUXDIR}/lichee/linux-3.4/kernel
+${LINUXDIR}/lichee/linux-3.4/lib
 ${LINUXDIR}/lichee/tools/pack
 )
 
