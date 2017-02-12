@@ -10,6 +10,7 @@
  *
  * 02Feb2004	Initial version
  */
+/* 基于Edward M. McCreight于1985年发表于计算机杂志上的基数优先搜索树算法 */
 
 #include <linux/init.h>
 #include <linux/mm.h>
@@ -66,14 +67,17 @@ static void get_index(const struct prio_tree_root *root,
 	}
 }
 
+// BITS_PER_LONG LONG是多少bit的？考虑到可移植性，这里采用宏定义确定
 static unsigned long index_bits_to_maxindex[BITS_PER_LONG];
 
 void __init prio_tree_init(void)
 {
 	unsigned int i;
 
+    // 这里把index_bits_to_maxindex[i]数组初始化为：2^(i+1)-1   ?? why??
 	for (i = 0; i < ARRAY_SIZE(index_bits_to_maxindex) - 1; i++)
 		index_bits_to_maxindex[i] = (1UL << (i + 1)) - 1;
+    // 数组最后一个初始化为了全F
 	index_bits_to_maxindex[ARRAY_SIZE(index_bits_to_maxindex) - 1] = ~0UL;
 }
 
