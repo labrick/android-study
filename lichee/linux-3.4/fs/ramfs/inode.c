@@ -7,6 +7,15 @@
  * Usage limits added by David Gibson, Linuxcare Australia.
  * This file is released under the GPL.
  */
+/*
+ * 针对Linux的可调整大小的简单RAM文件系统。
+ *
+ * 版权所有 2000 Linus Torvalds
+ * 版权所有 2000 Transmeta Corp
+ *
+ * 使用限制由David Gibson（澳大利亚Linuxcare公司）添加，
+ * 这个文件遵从GPL发布
+ */
 
 /*
  * NOTE! This filesystem is probably most useful
@@ -21,6 +30,13 @@
  * need to implement any data structures of its own
  * to keep track of the virtual data: using the VFS
  * caches is sufficient.
+ */
+/* 
+ * 注意这个文件系统最有用的地方也许不是作为一个真正的文件系统，
+ * 而是作为一个例子，演示如何编写虚拟文件系统。
+ *
+ * 没有比这个更简单的文件系统了，主要考虑的方面是：该文件实现了
+ * 符合POSIX规范的可读写文件系统的完整语义。
  */
 
 #include <linux/fs.h>
