@@ -16,6 +16,7 @@ ${LINUXDIR}/lichee/linux-3.4/drivers/staging/android
 ${LINUXDIR}/lichee/linux-3.4/kernel
 ${LINUXDIR}/lichee/linux-3.4/lib
 ${LINUXDIR}/lichee/linux-3.4/init
+${LINUXDIR}/lichee/linux-3.4/fs/ramfs
 ${LINUXDIR}/lichee/tools/pack
 )
 
