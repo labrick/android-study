@@ -287,6 +287,7 @@ static int __init unknown_bootoption(char *param, char *val)
 	return 0;
 }
 
+// 设置init参数，如果init命令存在，则不再执行/init，而是执行这里设置的程序
 static int __init init_setup(char *str)
 {
 	unsigned int i;
@@ -304,6 +305,7 @@ static int __init init_setup(char *str)
 }
 __setup("init=", init_setup);
 
+// 设置rdinit参数，如果rdinit命令存在，则也不再执行/init，而是执行这里设置的程序
 static int __init rdinit_setup(char *str)
 {
 	unsigned int i;
