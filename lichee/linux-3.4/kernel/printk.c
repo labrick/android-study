@@ -151,6 +151,10 @@ static int console_may_schedule;
 
 #ifdef CONFIG_PRINTK
 
+// printk要打印的内容的临时缓冲区，串口初始化好之前的都会存储在这里，因此在串口初始化好之前
+// 出现问题，而且串口又未能初始化成功，能直接阅读这段缓冲区就可以找到问题。
+// 一种方法是：在uboot阶段直接使用内存转储命令来查看：md __log_buf地址。
+// 可以通过grep System.map文件找到__log_buf符号对应的内核虚拟地址，然后需要转换为物理地址。
 static char __log_buf[__LOG_BUF_LEN];
 static char *log_buf = __log_buf;
 static int log_buf_len = __LOG_BUF_LEN;
